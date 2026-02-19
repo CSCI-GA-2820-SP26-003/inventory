@@ -24,7 +24,7 @@ import logging
 from unittest import TestCase
 from wsgi import app
 from service.common import status
-from service.models import db  # , InventoryItem
+from service.models import db
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
@@ -56,7 +56,6 @@ class TestYourResourceService(TestCase):
     def setUp(self):
         """Runs before each test"""
         self.client = app.test_client()
-        # db.session.query(InventoryItem).delete()  # clean up the last tests
         db.session.commit()
 
     def tearDown(self):
@@ -74,5 +73,6 @@ class TestYourResourceService(TestCase):
         data = resp.get_json()
         self.assertEqual(data["name"], "Inventory RESTful Service")
         self.assertEqual(data["version"], "1.0")
+        self.assertEqual(data["description"], "The inventory service tracks product stock levels and conditions.")
 
     # Todo: Add your test cases here...
