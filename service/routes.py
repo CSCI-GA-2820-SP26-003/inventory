@@ -39,7 +39,7 @@ def index():
         jsonify(
             name="Inventory RESTful Service",
             version="1.0",
-            # description="The inventory service tracks product stock levels and conditions.",
+            description="The inventory service tracks product stock levels and conditions.",
         ),
         status.HTTP_200_OK,
     )
