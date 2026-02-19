@@ -23,18 +23,24 @@ and Delete YourResourceModel
 
 from flask import jsonify, request, url_for, abort
 from flask import current_app as app  # Import Flask application
-from service.models import YourResourceModel
+
+# from service.models import InventoryItem
 from service.common import status  # HTTP Status Codes
 
 
 ######################################################################
 # GET INDEX
 ######################################################################
-@app.route("/")
+@app.route("/inventory")
 def index():
     """Root URL response"""
+    # app.logger.info("Request for root URL")
     return (
-        "Reminder: return some useful information in json format about the service here",
+        jsonify(
+            name="Inventory RESTful Service",
+            version="1.0",
+            # description="The inventory service tracks product stock levels and conditions.",
+        ),
         status.HTTP_200_OK,
     )
 
