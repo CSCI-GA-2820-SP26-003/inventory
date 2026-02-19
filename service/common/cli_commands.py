@@ -17,6 +17,7 @@
 Flask CLI Command Extensions
 """
 from flask import current_app as app  # Import Flask application
+import uuid
 from service.models import db, InventoryItem, Condition
 
 
@@ -44,11 +45,14 @@ def db_create():
 @app.cli.command("seed-db")
 def seed_db():
     """Seeds the database with sample inventory items for development."""
+    pid1 = f"PROD-{uuid.uuid4().hex[:6].upper()}"
+    pid2 = f"PROD-{uuid.uuid4().hex[:6].upper()}"
+    pid3 = f"PROD-{uuid.uuid4().hex[:6].upper()}"
     items = [
-        InventoryItem(product_id="PROD-001", quantity=10, restock_level=5, restock_amount=20, condition=Condition.NEW),
-        InventoryItem(product_id="PROD-002", quantity=25, restock_level=10, restock_amount=30, condition=Condition.NEW),
-        InventoryItem(product_id="PROD-001", quantity=3, restock_level=2, restock_amount=10, condition=Condition.OPEN_BOX),
-        InventoryItem(product_id="PROD-003", quantity=0, restock_level=5, restock_amount=15, condition=Condition.USED),
+        InventoryItem(product_id=pid1, quantity=10, restock_level=5, restock_amount=20, condition=Condition.NEW),
+        InventoryItem(product_id=pid2, quantity=25, restock_level=10, restock_amount=30, condition=Condition.NEW),
+        InventoryItem(product_id=pid1, quantity=3, restock_level=2, restock_amount=10, condition=Condition.OPEN_BOX),
+        InventoryItem(product_id=pid3, quantity=0, restock_level=5, restock_amount=15, condition=Condition.USED),
     ]
     for item in items:
         item.create()
