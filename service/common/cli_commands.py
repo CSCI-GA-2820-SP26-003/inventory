@@ -17,7 +17,7 @@
 Flask CLI Command Extensions
 """
 from flask import current_app as app  # Import Flask application
-from service.models import db
+from service.models import db, InventoryItem, Condition
 
 
 ######################################################################
@@ -34,3 +34,23 @@ def db_create():
     db.drop_all()
     db.create_all()
     db.session.commit()
+
+
+######################################################################
+# Command to seed the database with sample data
+# Usage:
+#   flask seed-db
+######################################################################
+@app.cli.command("seed-db")
+def seed_db():
+    """Seeds the database with sample inventory items for development."""
+    items = [
+        InventoryItem(product_id="PROD-001", quantity=10, restock_level=5, restock_amount=20, condition=Condition.NEW),
+        InventoryItem(product_id="PROD-002", quantity=25, restock_level=10, restock_amount=30, condition=Condition.NEW),
+        InventoryItem(product_id="PROD-001", quantity=3, restock_level=2, restock_amount=10, condition=Condition.OPEN_BOX),
+        InventoryItem(product_id="PROD-003", quantity=0, restock_level=5, restock_amount=15, condition=Condition.USED),
+    ]
+    for item in items:
+        item.create()
+        app.logger.info("Created: %s", item.serialize())
+    app.logger.info("Seeded %d inventory items.", len(items))
