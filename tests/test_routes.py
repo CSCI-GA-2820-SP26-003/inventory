@@ -27,6 +27,7 @@ from service.common import status
 from service.models import db, InventoryItem, Condition
 from tests.factories import InventoryItemFactory
 
+
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
 )
@@ -198,3 +199,66 @@ class TestInventoryService(TestCase):
                 content_type="text/plain", # wrong content type
             )
             self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_update_item(self):
+        """It should Update an existing Inventory item"""
+        # create a item to update
+        test_item = InventoryItemFactory()
+        response = self.client.post(BASE_URL, json=test_item.serialize())
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # update the item
+        new_item = response.get_json()
+        logging.debug(new_item)
+
+        #replace required fields
+        #new_item["category"] = "unknown"
+        new_item["productId"] = "PROD123"
+        new_item["quantity"] = 75
+        new_item["restockLevel"] = 30
+        new_item["restockAmount"] = 150
+        new_item["condition"] = "NEW"
+
+        #send PUT request
+        response = self.client.put(f"{BASE_URL}/{new_item['id']}", json=new_item)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        updated_item = response.get_json()
+        self.assertEqual(updated_item["quantity"], 75)
+        self.assertEqual(updated_item["condition"], "NEW")
+    
+    def test_update_nonexistent_item(self):
+        """It should return 404 when updating an item that doesn't exist"""
+        payload = {
+            "productId": "PROD999",
+            "quantity": 10,
+            "restockLevel": 5,
+            "restockAmount": 50,
+            "condition": "NEW",
+        }
+        response = self.client.put(f"{BASE_URL}/9999", json=payload)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("message", data)
+        self.assertIn("not found", data["message"].lower())
+
+    def test_update_item_empty_body(self):
+        """It should return 400 when PUT body is empty"""
+        test_item = InventoryItemFactory()
+        response = self.client.post(BASE_URL, json=test_item.serialize())
+        item = response.get_json()
+
+        response = self.client.put(f"{BASE_URL}/{item['id']}", json={})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("missing", response.get_json()["message"].lower())
+    
+    def test_update_item_post_method_not_allowed(self):
+        """It should return 405 when POST is used on the update endpoint"""
+        test_item = InventoryItemFactory()
+        response = self.client.post(BASE_URL, json=test_item.serialize())
+        item = response.get_json()
+
+        payload = test_item.serialize()
+        # Send POST to the PUT endpoint
+        response = self.client.post(f"{BASE_URL}/{item['id']}", json=payload)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
