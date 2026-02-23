@@ -176,20 +176,20 @@ def check_content_type(content_type) -> None:
 ######################################################################
 # UPDATE AN EXISTING INVENTORY ITEM 
 ######################################################################
-@app.route("/inventory/items/<int:item_id>", methods=["PUT"])
-def update_inventory_item(item_id):
+@app.route("/inventory/items/<string:public_id>", methods=["PUT"])
+def update_inventory_item(public_id):
     """
     Update a inventory item
 
     This endpoint will update a inventory item based the body that is posted
     """
-    app.logger.info("Request to Update a inventory item with id [%s]", item_id)
+    app.logger.info("Request to Update a inventory item with id [%s]", public_id)
     check_content_type("application/json")
 
     # Attempt to find the inventory item and abort if not found
-    inventory_item = InventoryItem.find(item_id)
+    inventory_item = InventoryItem.query.filter_by(public_id=public_id).first()
     if not inventory_item:
-        abort(status.HTTP_404_NOT_FOUND, f"inventory item with id '{item_id}' was not found.")
+        abort(status.HTTP_404_NOT_FOUND, f"inventory item with id '{public_id}' was not found.")
 
     # Update the inventory item with the new data
     data = request.get_json()

@@ -66,6 +66,7 @@ class TestInventoryService(TestCase):
     def tearDown(self):
         """This runs after each test"""
         db.session.remove()
+    
 
     ######################################################################
     #  P L A C E   T E S T   C A S E S   H E R E
@@ -213,14 +214,14 @@ class TestInventoryService(TestCase):
 
         #replace required fields
         #new_item["category"] = "unknown"
-        new_item["productId"] = "PROD123"
+        new_item["product_id"] = "PROD123"
         new_item["quantity"] = 75
-        new_item["restockLevel"] = 30
-        new_item["restockAmount"] = 150
+        new_item["restock_level"] = 30
+        new_item["restock_amount"] = 150
         new_item["condition"] = "NEW"
 
         #send PUT request
-        response = self.client.put(f"{BASE_URL}/{new_item['id']}", json=new_item)
+        response = self.client.put(f"{BASE_URL}/{new_item['public_id']}", json=new_item)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         updated_item = response.get_json()
@@ -230,13 +231,13 @@ class TestInventoryService(TestCase):
     def test_update_nonexistent_item(self):
         """It should return 404 when updating an item that doesn't exist"""
         payload = {
-            "productId": "PROD999",
+            "product_id": "PROD999",
             "quantity": 10,
-            "restockLevel": 5,
-            "restockAmount": 50,
+            "restock_level": 5,
+            "restock_amount": 50,
             "condition": "NEW",
         }
-        response = self.client.put(f"{BASE_URL}/9999", json=payload)
+        response = self.client.put(f"{BASE_URL}/fake-public-id-9999", json=payload)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         data = response.get_json()
         self.assertIn("message", data)
@@ -248,7 +249,7 @@ class TestInventoryService(TestCase):
         response = self.client.post(BASE_URL, json=test_item.serialize())
         item = response.get_json()
 
-        response = self.client.put(f"{BASE_URL}/{item['id']}", json={})
+        response = self.client.put(f"{BASE_URL}/{item['public_id']}", json={})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("missing", response.get_json()["message"].lower())
     
@@ -260,5 +261,5 @@ class TestInventoryService(TestCase):
 
         payload = test_item.serialize()
         # Send POST to the PUT endpoint
-        response = self.client.post(f"{BASE_URL}/{item['id']}", json=payload)
+        response = self.client.post(f"{BASE_URL}/{item['public_id']}", json=payload)
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
