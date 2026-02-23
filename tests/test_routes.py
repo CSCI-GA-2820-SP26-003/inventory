@@ -114,26 +114,25 @@ class TestInventoryService(TestCase):
         """It should reject request with negative quantity and return 400"""
         test_item = InventoryItemFactory.build()
         payload = test_item.serialize()
-        payload["quantity"] = -5
-        response = self.client.post(BASE_URL, json=payload)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        data = response.get_json()
-        self.assertIn("message", data)
-        self.assertIn("non-negative", data["message"].lower())
-
-    def test_create_inventory_item_reject_invalid_condition(self):
-        """It should reject request with invalid condition and return 400 with valid values"""
-        test_item = InventoryItemFactory.build()
-        payload = test_item.serialize()
-        payload["condition"] = "DAMAGED"
+        payload["quantity"] = -5    # negative quantity
         response = self.client.post(BASE_URL, json=payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         data = response.get_json()
         self.assertIn("message", data)
         msg = data["message"]
-        self.assertIn("NEW", msg)
-        self.assertIn("OPEN_BOX", msg)
-        self.assertIn("USED", msg)
+        self.assertIn("quantity must be non-negative", msg)
+
+    def test_create_inventory_item_reject_invalid_condition(self):
+        """It should reject request with invalid condition and return 400 with valid values"""
+        test_item = InventoryItemFactory.build()
+        payload = test_item.serialize()
+        payload["condition"] = "DAMAGED"    # invalid condition
+        response = self.client.post(BASE_URL, json=payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = response.get_json()
+        self.assertIn("message", data)
+        msg = data["message"]
+        self.assertIn("Invalid condition. Valid values: NEW, OPEN_BOX, USED", msg)
 
     def test_create_inventory_item_duplicate_409_conflict(self):
         """It should return 409 CONFLICT when same product_id and condition already exists"""
@@ -147,3 +146,55 @@ class TestInventoryService(TestCase):
 
         response2 = self.client.post(BASE_URL, json=payload)
         self.assertEqual(response2.status_code, status.HTTP_409_CONFLICT)
+
+    def test_create_inventory_item_null_body_returns_400(self):
+        """It should return 400 when request body is null (get_json() returns None)"""
+        response = self.client.post(
+            BASE_URL,
+            data="null",    # null body
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_inventory_item_deserialize_error_missing_condition(self):
+        """It should return 400 with valid condition values when condition is missing"""
+        test_item = InventoryItemFactory.build()
+        payload = test_item.serialize()
+        payload.pop("condition")    # remove the condition field
+        response = self.client.post(BASE_URL, json=payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = response.get_json()
+        self.assertIn("message", data)
+        msg = data["message"]
+        self.assertIn("Invalid condition. Valid values: NEW, OPEN_BOX, USED", msg)
+
+    def test_create_inventory_item_deserialize_error_missing_required_field(self):
+        """It should return 400 with error message when a required field is missing"""
+        test_item = InventoryItemFactory.build()
+        payload = test_item.serialize()
+        payload.pop("product_id")    # remove the product_id field
+        response = self.client.post(BASE_URL, json=payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = response.get_json()
+        self.assertIn("message", data)
+        self.assertIn("product_id", data["message"].lower())
+
+    def test_create_inventory_item_no_content_type_returns_415(self):
+        """It should return 415 when Content-Type header is missing"""
+        response = self.client.post(
+            BASE_URL,
+            data='{"product_id":"p1","quantity":0,"condition":"NEW","restock_level":1,"restock_amount":2}',
+            # remove the content_type header
+        )
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_create_inventory_item_wrong_content_type_returns_415(self):
+            """It should return 415 when Content-Type is not application/json"""
+            test_item = InventoryItemFactory.build()
+            payload = test_item.serialize()
+            response = self.client.post(
+                BASE_URL,
+                data=payload,
+                content_type="text/plain", # wrong content type
+            )
+            self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
