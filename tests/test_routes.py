@@ -71,9 +71,13 @@ class TestInventoryService(TestCase):
     ######################################################################
 
     def test_index(self):
-        """It should call the home page"""
-        resp = self.client.get("/")
+        """It should call the home page / inventory"""
+        resp = self.client.get("/inventory")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.get_json()
+        self.assertEqual(data["name"], "Inventory RESTful Service")
+        self.assertEqual(data["version"], "1.0")
+        self.assertEqual(data["description"], "The inventory service tracks product stock levels and conditions.")
 
     # Todo: Add your test cases here...
 
