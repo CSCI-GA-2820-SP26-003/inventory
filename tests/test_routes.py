@@ -77,7 +77,10 @@ class TestInventoryService(TestCase):
         data = resp.get_json()
         self.assertEqual(data["name"], "Inventory RESTful Service")
         self.assertEqual(data["version"], "1.0")
-        self.assertEqual(data["description"], "The inventory service tracks product stock levels and conditions.")
+        self.assertEqual(
+            data["description"],
+            "The inventory service tracks product stock levels and conditions.",
+        )
 
     # Todo: Add your test cases here...
 
@@ -105,8 +108,8 @@ class TestInventoryService(TestCase):
 
         # uncomment when we have the get_inventory_items endpoint
         # # Check that the location header was correct
-        # response = self.client.get(location)
-        # self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.get(location)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         # new_item = response.get_json()
         # self.assertEqual(new_item["product_id"], test_item.product_id)
         # self.assertEqual(new_item["quantity"], test_item.quantity)
@@ -118,7 +121,7 @@ class TestInventoryService(TestCase):
         """It should reject request with negative quantity and return 400"""
         test_item = InventoryItemFactory.build()
         payload = test_item.serialize()
-        payload["quantity"] = -5    # negative quantity
+        payload["quantity"] = -5  # negative quantity
         response = self.client.post(BASE_URL, json=payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         data = response.get_json()
@@ -130,7 +133,7 @@ class TestInventoryService(TestCase):
         """It should reject request with invalid condition and return 400 with valid values"""
         test_item = InventoryItemFactory.build()
         payload = test_item.serialize()
-        payload["condition"] = "DAMAGED"    # invalid condition
+        payload["condition"] = "DAMAGED"  # invalid condition
         response = self.client.post(BASE_URL, json=payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         data = response.get_json()
@@ -155,7 +158,7 @@ class TestInventoryService(TestCase):
         """It should return 400 when request body is null (get_json() returns None)"""
         response = self.client.post(
             BASE_URL,
-            data="null",    # null body
+            data="null",  # null body
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -164,7 +167,7 @@ class TestInventoryService(TestCase):
         """It should return 400 with valid condition values when condition is missing"""
         test_item = InventoryItemFactory.build()
         payload = test_item.serialize()
-        payload.pop("condition")    # remove the condition field
+        payload.pop("condition")  # remove the condition field
         response = self.client.post(BASE_URL, json=payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         data = response.get_json()
@@ -176,7 +179,7 @@ class TestInventoryService(TestCase):
         """It should return 400 with error message when a required field is missing"""
         test_item = InventoryItemFactory.build()
         payload = test_item.serialize()
-        payload.pop("product_id")    # remove the product_id field
+        payload.pop("product_id")  # remove the product_id field
         response = self.client.post(BASE_URL, json=payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         data = response.get_json()
@@ -193,12 +196,36 @@ class TestInventoryService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
     def test_create_inventory_item_wrong_content_type_returns_415(self):
-            """It should return 415 when Content-Type is not application/json"""
-            test_item = InventoryItemFactory.build()
-            payload = test_item.serialize()
-            response = self.client.post(
-                BASE_URL,
-                data=payload,
-                content_type="text/plain", # wrong content type
-            )
-            self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+        """It should return 415 when Content-Type is not application/json"""
+        test_item = InventoryItemFactory.build()
+        payload = test_item.serialize()
+        response = self.client.post(
+            BASE_URL,
+            data=payload,
+            content_type="text/plain",  # wrong content type
+        )
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    # ----------------------------------------------------------
+    # TEST READ
+    # ----------------------------------------------------------
+    def test_get_inventory_item(self):
+        """It should Get a single InventoryItem"""
+        test_item = InventoryItemFactory()
+        test_item.create()
+
+        response = self.client.get(f"{BASE_URL}/{test_item.id}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.get_json()
+        self.assertEqual(data["product_id"], test_item.product_id)
+
+    def test_get_inventory_item_not_found(self):
+        """It should not Get an InventoryItem that's not found"""
+        response = self.client.get(f"{BASE_URL}/0")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_method_not_allowed(self):
+        """It should not allow unsupported HTTP methods"""
+        response = self.client.put("/inventory")
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
