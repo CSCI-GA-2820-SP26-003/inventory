@@ -151,10 +151,14 @@ def create_inventory_items():
     inventory_item.create()
     app.logger.info("Inventory Item with new id [%s] saved!", inventory_item.id)
     # uncomment to replace the location_url when we have the get_inventory_items endpoint
-    # location_url = url_for("get_inventory_items", inventory_item_public_id=inventory_item.public_id, _external=True)
     location_url = url_for(
-        "get_inventory_items", item_id=inventory_item.id, _external=True
+        "get_inventory_items",
+        public_id=inventory_item.public_id,
+        _external=True,
     )
+    # location_url = url_for(
+    #     "get_inventory_items", item_id=inventory_item.id, _external=True
+    # )
     return (
         jsonify(inventory_item.serialize()),
         status.HTTP_201_CREATED,
@@ -165,26 +169,26 @@ def create_inventory_items():
 ######################################################################
 # READ A SPECIFIC INVENTORY ITEM
 ######################################################################
-@app.route("/inventory/items/<int:item_id>", methods=["GET"])
-def get_inventory_items(item_id):
+@app.route("/inventory/items/<public_id>", methods=["GET"])
+def get_inventory_items(public_id):
     """
     Retrieve a single Inventory Item
     This endpoint will return an Item based on its id
     """
-    app.logger.info("Request to Retrieve inventory item with id: %s", item_id)
+    app.logger.info("Request to Retrieve inventory item with public_id: %s", public_id)
 
     # Find
-    inventory_item = InventoryItem.find(item_id)
+    inventory_item = InventoryItem.find_by_public_id(public_id)
 
     # If not find, return '404'
     if not inventory_item:
         abort(
             status.HTTP_404_NOT_FOUND,
-            f"Inventory item with id '{item_id}' was not found.",
+            f"Inventory item with public_id '{public_id}' was not found.",
         )
 
     # If find, returen JSON (serialize)
-    app.logger.info("Returning inventory item: %s", inventory_item.product_id)
+    app.logger.info("Returning inventory item: %s", inventory_item.public_id)
     return jsonify(inventory_item.serialize()), status.HTTP_200_OK
 
 

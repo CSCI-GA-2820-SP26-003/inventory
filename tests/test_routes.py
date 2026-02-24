@@ -26,6 +26,7 @@ from wsgi import app
 from service.common import status
 from service.models import db, InventoryItem, Condition
 from tests.factories import InventoryItemFactory
+from unittest.mock import patch
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
@@ -214,18 +215,91 @@ class TestInventoryService(TestCase):
         test_item = InventoryItemFactory()
         test_item.create()
 
-        response = self.client.get(f"{BASE_URL}/{test_item.id}")
+        response = self.client.get(f"{BASE_URL}/{test_item.public_id}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         data = response.get_json()
+        self.assertEqual(data["public_id"], test_item.public_id)
         self.assertEqual(data["product_id"], test_item.product_id)
 
     def test_get_inventory_item_not_found(self):
         """It should not Get an InventoryItem that's not found"""
-        response = self.client.get(f"{BASE_URL}/0")
+        response = self.client.get(f"{BASE_URL}/non-existent-id")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_method_not_allowed(self):
         """It should not allow unsupported HTTP methods"""
         response = self.client.put("/inventory")
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_method_not_allowed_on_items(self):
+        """It should return 405 Method Not Allowed when calling an unsupported method on items"""
+        response = self.client.put(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        response = self.client.delete(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_create_inventory_item_data_validation_error(self):
+        """It should return 400 Bad Request on DataValidationError"""
+        with patch("service.models.InventoryItem.deserialize") as mocked_deser:
+            from service.models import DataValidationError
+
+            mocked_deser.side_effect = DataValidationError("Custom Validation Error")
+
+            test_item = InventoryItemFactory()
+            response = self.client.post(BASE_URL, json=test_item.serialize())
+
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+            data = response.get_json()
+            self.assertEqual(data["error"], "Bad Request")
+
+    def test_get_inventory_item_500_error(self):
+        """It should return 500 Internal Server Error when the database fails"""
+        with patch("service.models.InventoryItem.find_by_public_id") as mocked_find:
+            mocked_find.side_effect = Exception("Database connection failed")
+
+            app.config["PROPAGATE_EXCEPTIONS"] = False
+
+            response = self.client.get(f"{BASE_URL}/any-id")
+
+            app.config["PROPAGATE_EXCEPTIONS"] = True
+
+            self.assertEqual(
+                response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+            data = response.get_json()
+            self.assertEqual(data["error"], "Internal Server Error")
+
+    def test_unsupported_method_on_item(self):
+        """It should return 405 Method Not Allowed when sending POST to an item URL"""
+        test_item = InventoryItemFactory()
+        test_item.create()
+        response = self.client.post(f"{BASE_URL}/{test_item.public_id}")
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_method_not_allowed_global_handler(self):
+        """It should trigger the global 405 error handler"""
+        response = self.client.delete(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        data = response.get_json()
+        self.assertEqual(data["error"], "Method not Allowed")
+
+    def test_db_create_command(self):
+        """It should execute the db-create command"""
+        from service.common.cli_commands import db_create
+
+        runner = app.test_cli_runner()
+        result = runner.invoke(db_create)
+        self.assertEqual(result.exit_code, 0)
+
+    def test_data_validation_error_global_handler(self):
+        """It should trigger the global 400 error handler for DataValidationError"""
+        with patch("service.models.InventoryItem.find_by_public_id") as mocked_find:
+            from service.models import DataValidationError
+
+            mocked_find.side_effect = DataValidationError("Global Validation Error")
+            response = self.client.get(f"{BASE_URL}/some-id")
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+            data = response.get_json()
+            self.assertEqual(data["error"], "Bad Request")
+            self.assertEqual(data["message"], "Global Validation Error")
