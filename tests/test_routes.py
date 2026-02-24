@@ -15,7 +15,7 @@
 ######################################################################
 
 """
-TestYourResourceModel API Service Test Suite
+TestInventoryItem API Service Test Suite
 """
 
 # pylint: disable=duplicate-code
@@ -24,18 +24,21 @@ import logging
 from unittest import TestCase
 from wsgi import app
 from service.common import status
-from service.models import db
+from service.models import db, InventoryItem, Condition
+from tests.factories import InventoryItemFactory
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
 )
+
+BASE_URL = "/inventory/items"
 
 
 ######################################################################
 #  T E S T   C A S E S
 ######################################################################
 # pylint: disable=too-many-public-methods
-class TestYourResourceService(TestCase):
+class TestInventoryService(TestCase):
     """REST API Server Tests"""
 
     @classmethod
@@ -56,6 +59,7 @@ class TestYourResourceService(TestCase):
     def setUp(self):
         """Runs before each test"""
         self.client = app.test_client()
+        db.session.query(InventoryItem).delete()  # clean up the last tests
         db.session.commit()
 
     def tearDown(self):
@@ -76,3 +80,125 @@ class TestYourResourceService(TestCase):
         self.assertEqual(data["description"], "The inventory service tracks product stock levels and conditions.")
 
     # Todo: Add your test cases here...
+
+    # ----------------------------------------------------------
+    # TEST CREATE
+    # ----------------------------------------------------------
+    def test_create_inventory_item(self):
+        """It should Create a new InventoryItem"""
+        test_item = InventoryItemFactory.build()
+        logging.debug("Test InventoryItem: %s", test_item.serialize())
+        response = self.client.post(BASE_URL, json=test_item.serialize())
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Make sure location header is set
+        location = response.headers.get("Location", None)
+        self.assertIsNotNone(location)
+
+        # Check that the data is correct
+        new_item = response.get_json()
+        self.assertEqual(new_item["product_id"], test_item.product_id)
+        self.assertEqual(new_item["quantity"], test_item.quantity)
+        self.assertEqual(new_item["condition"], test_item.condition.name)
+        self.assertEqual(new_item["restock_level"], test_item.restock_level)
+        self.assertEqual(new_item["restock_amount"], test_item.restock_amount)
+
+        # uncomment when we have the get_inventory_items endpoint
+        # # Check that the location header was correct
+        # response = self.client.get(location)
+        # self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # new_item = response.get_json()
+        # self.assertEqual(new_item["product_id"], test_item.product_id)
+        # self.assertEqual(new_item["quantity"], test_item.quantity)
+        # self.assertEqual(new_item["condition"], test_item.condition.value)
+        # self.assertEqual(new_item["restock_level"], test_item.restock_level)
+        # self.assertEqual(new_item["restock_amount"], test_item.restock_amount)
+
+    def test_create_inventory_item_reject_negative_quantity(self):
+        """It should reject request with negative quantity and return 400"""
+        test_item = InventoryItemFactory.build()
+        payload = test_item.serialize()
+        payload["quantity"] = -5    # negative quantity
+        response = self.client.post(BASE_URL, json=payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = response.get_json()
+        self.assertIn("message", data)
+        msg = data["message"]
+        self.assertIn("quantity must be non-negative", msg)
+
+    def test_create_inventory_item_reject_invalid_condition(self):
+        """It should reject request with invalid condition and return 400 with valid values"""
+        test_item = InventoryItemFactory.build()
+        payload = test_item.serialize()
+        payload["condition"] = "DAMAGED"    # invalid condition
+        response = self.client.post(BASE_URL, json=payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = response.get_json()
+        self.assertIn("message", data)
+        msg = data["message"]
+        self.assertIn("Invalid condition. Valid values: NEW, OPEN_BOX, USED", msg)
+
+    def test_create_inventory_item_duplicate_409_conflict(self):
+        """It should return 409 CONFLICT when same product_id and condition already exists"""
+        test_item = InventoryItemFactory.build(
+            product_id="prod_456",
+            condition=Condition.NEW,
+        )
+        payload = test_item.serialize()
+        response1 = self.client.post(BASE_URL, json=payload)
+        self.assertEqual(response1.status_code, status.HTTP_201_CREATED)
+
+        response2 = self.client.post(BASE_URL, json=payload)
+        self.assertEqual(response2.status_code, status.HTTP_409_CONFLICT)
+
+    def test_create_inventory_item_null_body_returns_400(self):
+        """It should return 400 when request body is null (get_json() returns None)"""
+        response = self.client.post(
+            BASE_URL,
+            data="null",    # null body
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_inventory_item_deserialize_error_missing_condition(self):
+        """It should return 400 with valid condition values when condition is missing"""
+        test_item = InventoryItemFactory.build()
+        payload = test_item.serialize()
+        payload.pop("condition")    # remove the condition field
+        response = self.client.post(BASE_URL, json=payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = response.get_json()
+        self.assertIn("message", data)
+        msg = data["message"]
+        self.assertIn("Invalid condition. Valid values: NEW, OPEN_BOX, USED", msg)
+
+    def test_create_inventory_item_deserialize_error_missing_required_field(self):
+        """It should return 400 with error message when a required field is missing"""
+        test_item = InventoryItemFactory.build()
+        payload = test_item.serialize()
+        payload.pop("product_id")    # remove the product_id field
+        response = self.client.post(BASE_URL, json=payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = response.get_json()
+        self.assertIn("message", data)
+        self.assertIn("product_id", data["message"].lower())
+
+    def test_create_inventory_item_no_content_type_returns_415(self):
+        """It should return 415 when Content-Type header is missing"""
+        response = self.client.post(
+            BASE_URL,
+            data='{"product_id":"p1","quantity":0,"condition":"NEW","restock_level":1,"restock_amount":2}',
+            # remove the content_type header
+        )
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_create_inventory_item_wrong_content_type_returns_415(self):
+            """It should return 415 when Content-Type is not application/json"""
+            test_item = InventoryItemFactory.build()
+            payload = test_item.serialize()
+            response = self.client.post(
+                BASE_URL,
+                data=payload,
+                content_type="text/plain", # wrong content type
+            )
+            self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)

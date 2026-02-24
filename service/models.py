@@ -1,10 +1,14 @@
 """
-Models for YourResourceModel
+Models for InventoryItem
 
 All of the models are stored in this module
 """
 
+import enum
 import logging
+import uuid
+from datetime import datetime, timezone
+
 from flask_sqlalchemy import SQLAlchemy
 
 logger = logging.getLogger("flask.app")
@@ -17,27 +21,63 @@ class DataValidationError(Exception):
     """Used for an data validation errors when deserializing"""
 
 
-class YourResourceModel(db.Model):
+class Condition(enum.Enum):
+    """Enumeration of valid inventory item conditions"""
+
+    NEW = "NEW"
+    OPEN_BOX = "OPEN_BOX"
+    USED = "USED"
+
+
+class InventoryItem(db.Model):
     """
-    Class that represents a YourResourceModel
+    Class that represents an InventoryItem
     """
+
+    __tablename__ = "inventory_item"
 
     ##################################################
     # Table Schema
     ##################################################
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(63))
+    public_id = db.Column(
+        db.String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4())
+    )
+    product_id = db.Column(db.String(63), nullable=False, index=True)
+    quantity = db.Column(db.Integer, nullable=False, default=0)
+    restock_level = db.Column(db.Integer, nullable=False)
+    restock_amount = db.Column(db.Integer, nullable=False)
+    condition = db.Column(
+        db.Enum(Condition, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+    )
+    created_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
-    # Todo: Place the rest of your schema here...
+    __table_args__ = (
+        db.UniqueConstraint("product_id", "condition", name="uq_product_condition"),
+        db.CheckConstraint("quantity >= 0", name="ck_quantity_non_negative"),
+    )
 
     def __repr__(self):
-        return f"<YourResourceModel {self.name} id=[{self.id}]>"
+        return (
+            f"<InventoryItem {self.product_id} [{self.condition.value}] id=[{self.id}]>"
+        )
 
     def create(self):
         """
-        Creates a YourResourceModel to the database
+        Creates an InventoryItem to the database
         """
-        logger.info("Creating %s", self.name)
+        logger.info("Creating inventory item for product %s", self.product_id)
         self.id = None  # pylint: disable=invalid-name
         try:
             db.session.add(self)
@@ -49,9 +89,9 @@ class YourResourceModel(db.Model):
 
     def update(self):
         """
-        Updates a YourResourceModel to the database
+        Updates an InventoryItem to the database
         """
-        logger.info("Saving %s", self.name)
+        logger.info("Saving inventory item %s", self.product_id)
         try:
             db.session.commit()
         except Exception as e:
@@ -60,8 +100,8 @@ class YourResourceModel(db.Model):
             raise DataValidationError(e) from e
 
     def delete(self):
-        """Removes a YourResourceModel from the data store"""
-        logger.info("Deleting %s", self.name)
+        """Removes an InventoryItem from the data store"""
+        logger.info("Deleting inventory item %s", self.product_id)
         try:
             db.session.delete(self)
             db.session.commit()
@@ -71,27 +111,43 @@ class YourResourceModel(db.Model):
             raise DataValidationError(e) from e
 
     def serialize(self):
-        """Serializes a YourResourceModel into a dictionary"""
-        return {"id": self.id, "name": self.name}
+        """Serializes an InventoryItem into a dictionary"""
+        return {
+            "id": self.id,
+            "public_id": self.public_id,
+            "product_id": self.product_id,
+            "quantity": self.quantity,
+            "restock_level": self.restock_level,
+            "restock_amount": self.restock_amount,
+            "condition": self.condition.value,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
 
     def deserialize(self, data):
         """
-        Deserializes a YourResourceModel from a dictionary
+        Deserializes an InventoryItem from a dictionary
 
         Args:
             data (dict): A dictionary containing the resource data
         """
         try:
-            self.name = data["name"]
+            self.product_id = data["product_id"]
+            self.quantity = data.get("quantity", 0)
+            self.restock_level = data["restock_level"]
+            self.restock_amount = data["restock_amount"]
+            self.condition = Condition(data["condition"])
         except AttributeError as error:
             raise DataValidationError("Invalid attribute: " + error.args[0]) from error
         except KeyError as error:
             raise DataValidationError(
-                "Invalid YourResourceModel: missing " + error.args[0]
+                "Invalid InventoryItem: missing " + error.args[0]
             ) from error
+        except ValueError as error:
+            raise DataValidationError("Invalid InventoryItem: " + str(error)) from error
         except TypeError as error:
             raise DataValidationError(
-                "Invalid YourResourceModel: body of request contained bad or no data "
+                "Invalid InventoryItem: body of request contained bad or no data "
                 + str(error)
             ) from error
         return self
@@ -102,22 +158,32 @@ class YourResourceModel(db.Model):
 
     @classmethod
     def all(cls):
-        """Returns all of the YourResourceModels in the database"""
-        logger.info("Processing all YourResourceModels")
+        """Returns all of the InventoryItems in the database"""
+        logger.info("Processing all InventoryItems")
         return cls.query.all()
 
     @classmethod
     def find(cls, by_id):
-        """Finds a YourResourceModel by it's ID"""
+        """Finds an InventoryItem by its ID"""
         logger.info("Processing lookup for id %s ...", by_id)
         return cls.query.session.get(cls, by_id)
 
     @classmethod
-    def find_by_name(cls, name):
-        """Returns all YourResourceModels with the given name
+    def find_by_name(cls, product_id):
+        """Returns all InventoryItems with the given product_id
 
         Args:
-            name (string): the name of the YourResourceModels you want to match
+            product_id (string): the product_id of the InventoryItems you want to match
         """
-        logger.info("Processing name query for %s ...", name)
-        return cls.query.filter(cls.name == name)
+        logger.info("Processing product_id query for %s ...", product_id)
+        return cls.query.filter(cls.product_id == product_id)
+
+    @classmethod
+    def find_by_condition(cls, condition):
+        """Returns all InventoryItems with the given condition
+
+        Args:
+            condition (Condition): the condition to filter by
+        """
+        logger.info("Processing condition query for %s ...", condition.value)
+        return cls.query.filter(cls.condition == condition)
