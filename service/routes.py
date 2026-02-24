@@ -165,7 +165,7 @@ def create_inventory_items():
 ######################################################################
 # READ A SPECIFIC INVENTORY ITEM
 ######################################################################
-@app.route("/inventory/items/<int:item_id>", methods=["GET"])
+@app.route("/inventory/items/:public_id", methods=["GET"])
 def get_inventory_items(item_id):
     """
     Retrieve a single Inventory Item
