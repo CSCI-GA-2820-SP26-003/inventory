@@ -111,8 +111,8 @@ class TestInventoryService(TestCase):
 
         # uncomment when we have the get_inventory_items endpoint
         # # Check that the location header was correct
-        response = self.client.get(location)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # response = self.client.get(location)
+        # self.assertEqual(response.status_code, status.HTTP_200_OK)
         # new_item = response.get_json()
         # self.assertEqual(new_item["product_id"], test_item.product_id)
         # self.assertEqual(new_item["quantity"], test_item.quantity)
@@ -269,7 +269,8 @@ class TestInventoryService(TestCase):
             self.assertEqual(
                 response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-            self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+            data = response.get_json()
+            self.assertEqual(data["error"], "Internal Server Error")
     
     # ----------------------------------------------------------
     # TEST UPDATE
@@ -374,8 +375,41 @@ class TestInventoryService(TestCase):
 
         data = response.get_json()
         self.assertEqual(data["error"], "Bad Request")
-            data = response.get_json()
-            self.assertEqual(data["error"], "Internal Server Error")
+
+    def test_update_item_null_body(self):
+        """It should return 400 when PUT body is null"""
+        test_item = InventoryItemFactory()
+        response = self.client.post(BASE_URL, json=test_item.serialize())
+        item = response.get_json()
+
+        response = self.client.put(
+            f"{BASE_URL}/{item['public_id']}",
+            data="null",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_update_item_negative_quantity(self):
+        """It should return 400 when updating with negative quantity"""
+        test_item = InventoryItemFactory()
+        response = self.client.post(BASE_URL, json=test_item.serialize())
+        item = response.get_json()
+
+        item["quantity"] = -10
+        response = self.client.put(f"{BASE_URL}/{item['public_id']}", json=item)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("quantity", response.get_json()["message"].lower())
+
+    def test_update_item_invalid_condition(self):
+        """It should return 400 when updating with invalid condition"""
+        test_item = InventoryItemFactory()
+        response = self.client.post(BASE_URL, json=test_item.serialize())
+        item = response.get_json()
+
+        item["condition"] = "DAMAGED"
+        response = self.client.put(f"{BASE_URL}/{item['public_id']}", json=item)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Invalid condition", response.get_json()["message"])
 
     def test_unsupported_method_on_item(self):
         """It should return 405 Method Not Allowed when sending POST to an item URL"""
