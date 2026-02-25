@@ -217,3 +217,96 @@ def check_content_type(content_type) -> None:
         status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
         f"Content-Type must be {content_type}",
     )
+
+
+######################################################################
+# UPDATE AN EXISTING INVENTORY ITEM 
+######################################################################
+@app.route("/inventory/items/<string:public_id>", methods=["PUT"])
+def update_inventory_item(public_id):
+    """
+    Update a inventory item
+
+    This endpoint will update a inventory item based the body that is posted
+    """
+    app.logger.info("Request to Update a inventory item with id [%s]", public_id)
+    check_content_type("application/json")
+
+    # Attempt to find the inventory item and abort if not found
+    inventory_item = InventoryItem.query.filter_by(public_id=public_id).first()
+    if not inventory_item:
+        abort(status.HTTP_404_NOT_FOUND, f"inventory item with id '{public_id}' was not found.")
+
+    # Update the inventory item with the new data
+    data = request.get_json()
+    app.logger.info("Processing: %s", data)
+   
+    # Null body check
+    if data is None:
+        return (
+            jsonify(
+                status=status.HTTP_400_BAD_REQUEST,
+                error="Bad Request",
+                message="Invalid JSON or request body",
+            ),
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    # Empty body check
+    if not data:
+        return (
+            jsonify(
+                status=status.HTTP_400_BAD_REQUEST,
+                error="Bad Request",
+                message="Invalid InventoryItem: missing data",
+            ),
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    # Reject negative quantity
+    if "quantity" in data:
+        quantity = data.get("quantity")
+        if not isinstance(quantity, int) or quantity < 0:
+            return (
+                jsonify(
+                    status=status.HTTP_400_BAD_REQUEST,
+                    error="Bad Request",
+                    message="quantity must be non-negative",
+                ),
+                status.HTTP_400_BAD_REQUEST,
+            )
+        
+    # Reject invalid condition
+    if "condition" in data:
+        condition = data.get("condition")
+        valid_values = ", ".join(c.value for c in Condition)
+        if condition not in [c.value for c in Condition]:
+            return (
+                jsonify(
+                    status=status.HTTP_400_BAD_REQUEST,
+                    error="Bad Request",
+                    message=f"Invalid condition. Valid values: {valid_values}",
+                ),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+    # Perform update
+    try:
+        inventory_item.deserialize(data)
+    except DataValidationError as err:
+        return (
+            jsonify(
+                status=status.HTTP_400_BAD_REQUEST,
+                error="Bad Request",
+                message=str(err),
+            ),
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    # Save the updates to the database
+    inventory_item.update()
+    
+    app.logger.info("inventory item with ID: %d updated.", inventory_item.id)
+    return jsonify(inventory_item.serialize()), status.HTTP_200_OK
+
+
