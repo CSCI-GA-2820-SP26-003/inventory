@@ -200,7 +200,10 @@ class TestInventoryService(TestCase):
                 content_type="text/plain", # wrong content type
             )
             self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
-
+    
+    # ----------------------------------------------------------
+    # TEST UPDATE
+    # ----------------------------------------------------------
     def test_update_item(self):
         """It should Update an existing Inventory item"""
         # create a item to update
@@ -263,3 +266,41 @@ class TestInventoryService(TestCase):
         # Send POST to the PUT endpoint
         response = self.client.post(f"{BASE_URL}/{item['public_id']}", json=payload)
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        
+    def test_update_bad_json(self):
+        """It should hit the 400 bad_request error handler"""
+
+        response = self.client.post(
+            BASE_URL,
+            data="this is not json",
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_update_data_validation_error(self):
+        """It should trigger DataValidationError handler"""
+
+        # Create a valid item first
+        test_item = InventoryItemFactory()
+        response = self.client.post(BASE_URL, json=test_item.serialize())
+        item = response.get_json()
+
+        # Send invalid data that deserialize() will reject
+        payload = {
+            "product_id": "PROD123",
+            "quantity": 10,
+            "restock_level": "invalid",   # wrong type
+            "restock_amount": 50,
+            "condition": "NEW",
+        }
+
+        response = self.client.put(
+            f"{BASE_URL}/{item['public_id']}",
+            json=payload
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        data = response.get_json()
+        self.assertEqual(data["error"], "Bad Request")
