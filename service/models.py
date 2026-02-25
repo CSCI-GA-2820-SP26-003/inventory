@@ -187,3 +187,9 @@ class InventoryItem(db.Model):
         """
         logger.info("Processing condition query for %s ...", condition.value)
         return cls.query.filter(cls.condition == condition)
+
+    @classmethod
+    def find_by_public_id(cls, public_id):
+        """Finds an InventoryItem by its public_id"""
+        logger.info("Processing lookup for public_id %s ...", public_id)
+        return cls.query.filter(cls.public_id == public_id).first()

@@ -22,7 +22,12 @@ and Delete YourResourceModel
 """
 
 from flask import current_app as app  # Import Flask application
-from flask import request, jsonify, url_for, abort  # Import Flask request, jsonify, url_for, abort
+from flask import (
+    request,
+    jsonify,
+    url_for,
+    abort,
+)  # Import Flask request, jsonify, url_for, abort
 from service.common import status  # HTTP Status Codes
 from service.models import InventoryItem, Condition, DataValidationError
 
@@ -49,6 +54,7 @@ def index():
 ######################################################################
 
 # Todo: Place your REST API code here ...
+
 
 ######################################################################
 # CREATE A NEW Inventory
@@ -92,8 +98,8 @@ def create_inventory_items():
         if condition not in Condition:
             return (
                 jsonify(
-                    status=status.HTTP_400_BAD_REQUEST, 
-                    error="Bad Request", 
+                    status=status.HTTP_400_BAD_REQUEST,
+                    error="Bad Request",
                     message=f"Invalid condition. Valid values: {', '.join(c.value for c in Condition)}",
                 ),
                 status.HTTP_400_BAD_REQUEST,
@@ -145,10 +151,45 @@ def create_inventory_items():
     inventory_item.create()
     app.logger.info("Inventory Item with new id [%s] saved!", inventory_item.id)
     # uncomment to replace the location_url when we have the get_inventory_items endpoint
-    # location_url = url_for("get_inventory_items", inventory_item_public_id=inventory_item.public_id, _external=True)
-    location_url = "unknown"
-    return jsonify(inventory_item.serialize()), status.HTTP_201_CREATED, {"Location": location_url}
+    location_url = url_for(
+        "get_inventory_items",
+        public_id=inventory_item.public_id,
+        _external=True,
+    )
+    # location_url = url_for(
+    #     "get_inventory_items", item_id=inventory_item.id, _external=True
+    # )
+    return (
+        jsonify(inventory_item.serialize()),
+        status.HTTP_201_CREATED,
+        {"Location": location_url},
+    )
 
+
+######################################################################
+# READ A SPECIFIC INVENTORY ITEM
+######################################################################
+@app.route("/inventory/items/<public_id>", methods=["GET"])
+def get_inventory_items(public_id):
+    """
+    Retrieve a single Inventory Item
+    This endpoint will return an Item based on its id
+    """
+    app.logger.info("Request to Retrieve inventory item with public_id: %s", public_id)
+
+    # Find
+    inventory_item = InventoryItem.find_by_public_id(public_id)
+
+    # If not find, return '404'
+    if not inventory_item:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Inventory item with public_id '{public_id}' was not found.",
+        )
+
+    # If find, returen JSON (serialize)
+    app.logger.info("Returning inventory item: %s", inventory_item.public_id)
+    return jsonify(inventory_item.serialize()), status.HTTP_200_OK
 
 
 ######################################################################
