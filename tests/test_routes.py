@@ -284,6 +284,28 @@ class TestInventoryService(TestCase):
         data = response.get_json()
         self.assertEqual(data["error"], "Method not Allowed")
 
+    # ----------------------------------------------------------
+    # TEST DELETE
+    # ----------------------------------------------------------
+    def test_delete_inventory_item(self):
+        """It should Delete an Inventory Item"""
+        test_item = InventoryItemFactory()
+        test_item.create()
+        response = self.client.delete(f"{BASE_URL}/{test_item.public_id}")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(response.data), 0)
+        # make sure they are deleted
+        response = self.client.get(f"{BASE_URL}/{test_item.public_id}")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_non_existing_inventory_item(self):
+        """It should Delete an Inventory Item even if it doesn't exist"""
+        response = self.client.delete(
+            f"{BASE_URL}/00000000-0000-0000-0000-000000000000"
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(response.data), 0)
+
     def test_db_create_command(self):
         """It should execute the db-create command"""
         from service.common.cli_commands import db_create
