@@ -102,7 +102,7 @@ class TestInventoryService(TestCase):
         new_item = response.get_json()
         self.assertEqual(new_item["product_id"], test_item.product_id)
         self.assertEqual(new_item["quantity"], test_item.quantity)
-        self.assertEqual(new_item["condition"], test_item.condition.name)
+        self.assertEqual(new_item["condition"], test_item.condition.value)
         self.assertEqual(new_item["restock_level"], test_item.restock_level)
         self.assertEqual(new_item["restock_amount"], test_item.restock_amount)
 
@@ -290,8 +290,6 @@ class TestInventoryService(TestCase):
         new_item = response.get_json()
         logging.debug(new_item)
 
-        # replace required fields
-        # new_item["category"] = "unknown"
         new_item["product_id"] = "PROD123"
         new_item["quantity"] = 75
         new_item["restock_level"] = 30
