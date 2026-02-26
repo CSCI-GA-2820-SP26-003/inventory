@@ -22,11 +22,12 @@ TestInventoryItem API Service Test Suite
 import os
 import logging
 from unittest import TestCase
+from unittest.mock import patch
 from wsgi import app
 from service.common import status
+from service.common.cli_commands import db_create
 from service.models import db, InventoryItem, Condition, DataValidationError
 from tests.factories import InventoryItemFactory
-from unittest.mock import patch
 
 
 DATABASE_URI = os.getenv(
@@ -438,8 +439,6 @@ class TestInventoryService(TestCase):
 
     def test_db_create_command(self):
         """It should execute the db-create command"""
-        from service.common.cli_commands import db_create
-
         runner = app.test_cli_runner()
         result = runner.invoke(db_create)
         self.assertEqual(result.exit_code, 0)

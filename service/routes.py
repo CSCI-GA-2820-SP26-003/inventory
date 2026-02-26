@@ -15,15 +15,16 @@
 ######################################################################
 
 """
-YourResourceModel Service
+Inventory Service
 
 This service implements a REST API that allows you to Create, Read, Update
-and Delete YourResourceModel
+and Delete Inventory Items
 """
 
 from flask import (
     request,
     jsonify,
+    url_for,
     abort,
     current_app as app,
 )
@@ -68,7 +69,6 @@ def list_inventory_items():
     return jsonify(results), status.HTTP_200_OK
 
 
-
 ######################################################################
 # CREATE A NEW Inventory
 ######################################################################
@@ -95,7 +95,7 @@ def create_inventory_items():
 
     # Reject negative quantity
     quantity = data.get("quantity", 0)
-    if not type(quantity) == int or quantity < 0:
+    if not isinstance(quantity, int) or quantity < 0:
         return (
             jsonify(
                 status=status.HTTP_400_BAD_REQUEST,
@@ -104,19 +104,6 @@ def create_inventory_items():
             ),
             status.HTTP_400_BAD_REQUEST,
         )
-
-    # Reject invalid condition and list valid values
-    if "condition" in data:
-        condition = data.get("condition")
-        if condition not in Condition:
-            return (
-                jsonify(
-                    status=status.HTTP_400_BAD_REQUEST,
-                    error="Bad Request",
-                    message=f"Invalid condition. Valid values: {', '.join(c.value for c in Condition)}",
-                ),
-                status.HTTP_400_BAD_REQUEST,
-            )
 
     inventory_item = InventoryItem()
     try:
@@ -163,14 +150,15 @@ def create_inventory_items():
 
     inventory_item.create()
     app.logger.info("Inventory Item with new id [%s] saved!", inventory_item.id)
-    # uncomment to replace the location_url when we have the get_inventory_items endpoint
-    # location_url = url_for("get_inventory_items", inventory_item_public_id=inventory_item.public_id, _external=True)
-    location_url = "unknown"
+    location_url = url_for(
+        "get_inventory_items", public_id=inventory_item.public_id, _external=True
+    )
     return (
         jsonify(inventory_item.serialize()),
         status.HTTP_201_CREATED,
         {"Location": location_url},
     )
+
 
 ######################################################################
 # READ A SPECIFIC INVENTORY ITEM
@@ -182,18 +170,13 @@ def get_inventory_items(public_id):
     This endpoint will return an Item based on its id
     """
     app.logger.info("Request to Retrieve inventory item with public_id: %s", public_id)
-
-    # Find
     inventory_item = InventoryItem.find_by_public_id(public_id)
-
-    # If not find, return '404'
     if not inventory_item:
         abort(
             status.HTTP_404_NOT_FOUND,
             f"Inventory item with public_id '{public_id}' was not found.",
         )
 
-    # If find, returen JSON (serialize)
     app.logger.info("Returning inventory item: %s", inventory_item.public_id)
     return jsonify(inventory_item.serialize()), status.HTTP_200_OK
 
@@ -208,7 +191,9 @@ def delete_inventory_items(public_id):
 
     This endpoint will delete an Inventory Item based on the public_id specified in the path
     """
-    app.logger.info("Request to Delete an inventory item with public_id [%s]", public_id)
+    app.logger.info(
+        "Request to Delete an inventory item with public_id [%s]", public_id
+    )
 
     item = InventoryItem.find_by_public_id(public_id)
     if item:
@@ -247,7 +232,7 @@ def check_content_type(content_type) -> None:
 
 
 ######################################################################
-# UPDATE AN EXISTING INVENTORY ITEM 
+# UPDATE AN EXISTING INVENTORY ITEM
 ######################################################################
 @app.route("/inventory/items/<string:public_id>", methods=["PUT"])
 def update_inventory_item(public_id):
@@ -260,14 +245,17 @@ def update_inventory_item(public_id):
     check_content_type("application/json")
 
     # Attempt to find the inventory item and abort if not found
-    inventory_item = InventoryItem.query.filter_by(public_id=public_id).first()
+    inventory_item = InventoryItem.find_by_public_id(public_id)
     if not inventory_item:
-        abort(status.HTTP_404_NOT_FOUND, f"inventory item with id '{public_id}' was not found.")
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"inventory item with id '{public_id}' was not found.",
+        )
 
     # Update the inventory item with the new data
     data = request.get_json()
     app.logger.info("Processing: %s", data)
-   
+
     # Null body check
     if data is None:
         return (
@@ -302,7 +290,7 @@ def update_inventory_item(public_id):
                 ),
                 status.HTTP_400_BAD_REQUEST,
             )
-        
+
     # Reject invalid condition
     if "condition" in data:
         condition = data.get("condition")
@@ -332,8 +320,6 @@ def update_inventory_item(public_id):
 
     # Save the updates to the database
     inventory_item.update()
-    
+
     app.logger.info("inventory item with ID: %d updated.", inventory_item.id)
     return jsonify(inventory_item.serialize()), status.HTTP_200_OK
-
-
