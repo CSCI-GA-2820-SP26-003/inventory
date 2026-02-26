@@ -266,16 +266,6 @@ class TestInventoryService(TestCase):
         finally:
             app.config["PROPAGATE_EXCEPTIONS"] = original
 
-            response = self.client.get(f"{BASE_URL}/any-id")
-
-            app.config["PROPAGATE_EXCEPTIONS"] = True
-
-            self.assertEqual(
-                response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-            data = response.get_json()
-            self.assertEqual(data["error"], "Internal Server Error")
-    
     # ----------------------------------------------------------
     # TEST UPDATE
     # ----------------------------------------------------------
@@ -374,22 +364,6 @@ class TestInventoryService(TestCase):
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
             data = response.get_json()
             self.assertEqual(data["error"], "Bad Request")
-
-    def test_update_item_null_body(self):
-        """It should return 400 when PUT body is null"""
-        test_item = InventoryItemFactory()
-        response = self.client.post(BASE_URL, json=test_item.serialize())
-        item = response.get_json()
-
-        response = self.client.put(
-            f"{BASE_URL}/{item['public_id']}",
-            data="null",
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-        data = response.get_json()
-        self.assertEqual(data["error"], "Bad Request")
 
     def test_update_item_null_body(self):
         """It should return 400 when PUT body is null"""
