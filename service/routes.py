@@ -199,6 +199,27 @@ def get_inventory_items(public_id):
 
 
 ######################################################################
+# DELETE AN INVENTORY ITEM
+######################################################################
+@app.route("/inventory/items/<public_id>", methods=["DELETE"])
+def delete_inventory_items(public_id):
+    """
+    Delete an Inventory Item
+
+    This endpoint will delete an Inventory Item based on the public_id specified in the path
+    """
+    app.logger.info("Request to Delete an inventory item with public_id [%s]", public_id)
+
+    item = InventoryItem.find_by_public_id(public_id)
+    if item:
+        app.logger.info("Inventory Item with public_id: %s found.", item.public_id)
+        item.delete()
+
+    app.logger.info("Inventory Item with public_id: %s delete complete.", public_id)
+    return {}, status.HTTP_204_NO_CONTENT
+
+
+######################################################################
 #  U T I L I T Y   F U N C T I O N S
 ######################################################################
 
