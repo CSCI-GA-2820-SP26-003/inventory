@@ -21,15 +21,18 @@ This service implements a REST API that allows you to Create, Read, Update
 and Delete YourResourceModel
 """
 
-from flask import current_app as app  # Import Flask application
 from flask import (
     request,
     jsonify,
-    url_for,
     abort,
-)  # Import Flask request, jsonify, url_for, abort
+    current_app as app,
+)
 from service.common import status  # HTTP Status Codes
 from service.models import InventoryItem, Condition, DataValidationError
+
+######################################################################
+#  R E S T   A P I   E N D P O I N T S
+######################################################################
 
 
 ######################################################################
@@ -50,10 +53,20 @@ def index():
 
 
 ######################################################################
-#  R E S T   A P I   E N D P O I N T S
+# LIST ALL INVENTORY ITEMS
 ######################################################################
+@app.route("/inventory/items", methods=["GET"])
+def list_inventory_items():
+    """
+    List all Inventory Items
+    This endpoint will return all Inventory Items ordered by id ascending
+    """
+    app.logger.info("Request to List all Inventory Items...")
+    items = InventoryItem.query.order_by(InventoryItem.id).all()
+    results = [item.serialize() for item in items]
+    app.logger.info("Returning %d inventory items", len(results))
+    return jsonify(results), status.HTTP_200_OK
 
-# Todo: Place your REST API code here ...
 
 
 ######################################################################
@@ -151,20 +164,13 @@ def create_inventory_items():
     inventory_item.create()
     app.logger.info("Inventory Item with new id [%s] saved!", inventory_item.id)
     # uncomment to replace the location_url when we have the get_inventory_items endpoint
-    location_url = url_for(
-        "get_inventory_items",
-        public_id=inventory_item.public_id,
-        _external=True,
-    )
-    # location_url = url_for(
-    #     "get_inventory_items", item_id=inventory_item.id, _external=True
-    # )
+    # location_url = url_for("get_inventory_items", inventory_item_public_id=inventory_item.public_id, _external=True)
+    location_url = "unknown"
     return (
         jsonify(inventory_item.serialize()),
         status.HTTP_201_CREATED,
         {"Location": location_url},
     )
-
 
 ######################################################################
 # READ A SPECIFIC INVENTORY ITEM

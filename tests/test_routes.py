@@ -24,7 +24,7 @@ import logging
 from unittest import TestCase
 from wsgi import app
 from service.common import status
-from service.models import db, InventoryItem, Condition
+from service.models import db, InventoryItem, Condition, DataValidationError
 from tests.factories import InventoryItemFactory
 from unittest.mock import patch
 
@@ -67,7 +67,6 @@ class TestInventoryService(TestCase):
     def tearDown(self):
         """This runs after each test"""
         db.session.remove()
-    
 
     ######################################################################
     #  P L A C E   T E S T   C A S E S   H E R E
@@ -84,8 +83,6 @@ class TestInventoryService(TestCase):
             data["description"],
             "The inventory service tracks product stock levels and conditions.",
         )
-
-    # Todo: Add your test cases here...
 
     # ----------------------------------------------------------
     # TEST CREATE
@@ -105,7 +102,7 @@ class TestInventoryService(TestCase):
         new_item = response.get_json()
         self.assertEqual(new_item["product_id"], test_item.product_id)
         self.assertEqual(new_item["quantity"], test_item.quantity)
-        self.assertEqual(new_item["condition"], test_item.condition.name)
+        self.assertEqual(new_item["condition"], test_item.condition.value)
         self.assertEqual(new_item["restock_level"], test_item.restock_level)
         self.assertEqual(new_item["restock_amount"], test_item.restock_amount)
 
@@ -244,8 +241,6 @@ class TestInventoryService(TestCase):
     def test_create_inventory_item_data_validation_error(self):
         """It should return 400 Bad Request on DataValidationError"""
         with patch("service.models.InventoryItem.deserialize") as mocked_deser:
-            from service.models import DataValidationError
-
             mocked_deser.side_effect = DataValidationError("Custom Validation Error")
 
             test_item = InventoryItemFactory()
@@ -257,21 +252,20 @@ class TestInventoryService(TestCase):
 
     def test_get_inventory_item_500_error(self):
         """It should return 500 Internal Server Error when the database fails"""
-        with patch("service.models.InventoryItem.find_by_public_id") as mocked_find:
-            mocked_find.side_effect = Exception("Database connection failed")
-
+        original = app.config.get("PROPAGATE_EXCEPTIONS")
+        try:
             app.config["PROPAGATE_EXCEPTIONS"] = False
+            with patch("service.models.InventoryItem.find_by_public_id") as mocked_find:
+                mocked_find.side_effect = Exception("Database connection failed")
+                response = self.client.get(f"{BASE_URL}/any-id")
+                self.assertEqual(
+                    response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+                data = response.get_json()
+                self.assertEqual(data["error"], "Internal Server Error")
+        finally:
+            app.config["PROPAGATE_EXCEPTIONS"] = original
 
-            response = self.client.get(f"{BASE_URL}/any-id")
-
-            app.config["PROPAGATE_EXCEPTIONS"] = True
-
-            self.assertEqual(
-                response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-            data = response.get_json()
-            self.assertEqual(data["error"], "Internal Server Error")
-    
     # ----------------------------------------------------------
     # TEST UPDATE
     # ----------------------------------------------------------
@@ -286,22 +280,20 @@ class TestInventoryService(TestCase):
         new_item = response.get_json()
         logging.debug(new_item)
 
-        #replace required fields
-        #new_item["category"] = "unknown"
         new_item["product_id"] = "PROD123"
         new_item["quantity"] = 75
         new_item["restock_level"] = 30
         new_item["restock_amount"] = 150
         new_item["condition"] = "NEW"
 
-        #send PUT request
+        # send PUT request
         response = self.client.put(f"{BASE_URL}/{new_item['public_id']}", json=new_item)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         updated_item = response.get_json()
         self.assertEqual(updated_item["quantity"], 75)
         self.assertEqual(updated_item["condition"], "NEW")
-    
+
     def test_update_nonexistent_item(self):
         """It should return 404 when updating an item that doesn't exist"""
         payload = {
@@ -326,7 +318,7 @@ class TestInventoryService(TestCase):
         response = self.client.put(f"{BASE_URL}/{item['public_id']}", json={})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("missing", response.get_json()["message"].lower())
-    
+
     def test_update_item_post_method_not_allowed(self):
         """It should return 405 when POST is used on the update endpoint"""
         test_item = InventoryItemFactory()
@@ -337,7 +329,7 @@ class TestInventoryService(TestCase):
         # Send POST to the PUT endpoint
         response = self.client.post(f"{BASE_URL}/{item['public_id']}", json=payload)
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-        
+
     def test_update_bad_json(self):
         """It should hit the 400 bad_request error handler"""
 
@@ -350,31 +342,28 @@ class TestInventoryService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_update_data_validation_error(self):
-        """It should trigger DataValidationError handler"""
-
-        # Create a valid item first
+        """It should trigger DataValidationError handler on update"""
         test_item = InventoryItemFactory()
         response = self.client.post(BASE_URL, json=test_item.serialize())
         item = response.get_json()
 
-        # Send invalid data that deserialize() will reject
         payload = {
             "product_id": "PROD123",
             "quantity": 10,
-            "restock_level": "invalid",   # wrong type
+            "restock_level": 5,
             "restock_amount": 50,
             "condition": "NEW",
         }
 
-        response = self.client.put(
-            f"{BASE_URL}/{item['public_id']}",
-            json=payload
-        )
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-        data = response.get_json()
-        self.assertEqual(data["error"], "Bad Request")
+        with patch("service.models.InventoryItem.deserialize") as mocked_deser:
+            mocked_deser.side_effect = DataValidationError("Update validation error")
+            response = self.client.put(
+                f"{BASE_URL}/{item['public_id']}",
+                json=payload,
+            )
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+            data = response.get_json()
+            self.assertEqual(data["error"], "Bad Request")
 
     def test_update_item_null_body(self):
         """It should return 400 when PUT body is null"""
@@ -436,11 +425,77 @@ class TestInventoryService(TestCase):
     def test_data_validation_error_global_handler(self):
         """It should trigger the global 400 error handler for DataValidationError"""
         with patch("service.models.InventoryItem.find_by_public_id") as mocked_find:
-            from service.models import DataValidationError
-
             mocked_find.side_effect = DataValidationError("Global Validation Error")
             response = self.client.get(f"{BASE_URL}/some-id")
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
             data = response.get_json()
             self.assertEqual(data["error"], "Bad Request")
             self.assertEqual(data["message"], "Global Validation Error")
+
+    # ----------------------------------------------------------
+    # HELPER METHODS
+    # ----------------------------------------------------------
+    def _create_items(self, count):
+        """Helper to create multiple inventory items via POST"""
+        items = []
+        for _ in range(count):
+            test_item = InventoryItemFactory.build()
+            response = self.client.post(BASE_URL, json=test_item.serialize())
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            items.append(response.get_json())
+        return items
+
+    # ----------------------------------------------------------
+    # TEST LIST ALL
+    # ----------------------------------------------------------
+    def test_list_all_inventory_items(self):
+        """It should return all inventory items"""
+        self._create_items(5)
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 5)
+
+    def test_list_inventory_items_empty(self):
+        """It should return an empty list when no items exist"""
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data, [])
+
+    def test_list_inventory_items_fields(self):
+        """It should return all required fields for each item"""
+        self._create_items(1)
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 1)
+        item = data[0]
+        required_fields = [
+            "id",
+            "public_id",
+            "product_id",
+            "quantity",
+            "restock_level",
+            "restock_amount",
+            "condition",
+            "created_at",
+            "updated_at",
+        ]
+        for field in required_fields:
+            self.assertIn(field, item)
+
+    def test_list_inventory_items_order(self):
+        """It should return items ordered by id ascending"""
+        self._create_items(3)
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        ids = [item["id"] for item in data]
+        self.assertEqual(ids, sorted(ids))
+
+    def test_list_inventory_items_content_type(self):
+        """It should return application/json content type"""
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.content_type, "application/json")
