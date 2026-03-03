@@ -36,13 +36,26 @@ from service.models import InventoryItem, Condition, DataValidationError
 ######################################################################
 
 
+@app.route("/")
+def index():
+    """Root URL response with service URL and available resources"""
+    app.logger.info("Request for root URL")
+    return (
+        jsonify(
+            url=url_for("index", _external=True),
+            resources={"inventory": url_for("inventory_index", _external=True)},
+        ),
+        status.HTTP_200_OK,
+    )
+
+
 ######################################################################
 # GET INDEX
 ######################################################################
 @app.route("/inventory")
-def index():
-    """Root URL response"""
-    # app.logger.info("Request for root URL")
+def inventory_index():
+    """Inventory Root URL response"""
+    app.logger.info("Request for inventory URL")
     return (
         jsonify(
             name="Inventory RESTful Service",

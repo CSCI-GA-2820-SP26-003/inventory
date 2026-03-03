@@ -85,6 +85,15 @@ class TestInventoryService(TestCase):
             "The inventory service tracks product stock levels and conditions.",
         )
 
+    def test_root_url(self):
+        """It should call the root URL and return service url and resources"""
+        resp = self.client.get("/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.get_json()
+        self.assertIn("url", data)
+        self.assertIn("resources", data)
+        self.assertIn("inventory", data["resources"])
+
     # ----------------------------------------------------------
     # TEST CREATE
     # ----------------------------------------------------------
