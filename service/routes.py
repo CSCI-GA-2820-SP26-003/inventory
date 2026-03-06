@@ -74,16 +74,38 @@ def inventory_index():
 def list_inventory_items():
     """
     List all Inventory Items
-    This endpoint will return all Inventory Items ordered by id ascending
-    It can also filter by items needing restock: /inventory/items?restock=true
+    This endpoint will return all Inventory Items
     """
     app.logger.info("Request to List all Inventory Items...")
 
-    # Initialize the query
+    items = []
+
+    # Parse any arguments from the query string
+    product_id = request.args.get("product_id")
+    condition = request.args.get("condition")
+    restock = request.args.get("restock")
+
     query = InventoryItem.query
 
-    # Check for restock query parameter
-    restock = request.args.get("restock")
+    if product_id:
+        app.logger.info("Find by product_id: %s", product_id)
+        query = query.filter(InventoryItem.product_id == product_id)
+    if condition:
+        app.logger.info("Find by condition: %s", condition)
+        try:
+            query = query.filter(
+                InventoryItem.condition == Condition[condition.upper()]
+            )
+        except KeyError:
+            valid_values = ", ".join(c.value for c in Condition)
+            return (
+                jsonify(
+                    status=status.HTTP_400_BAD_REQUEST,
+                    error="Bad Request",
+                    message=f"Invalid condition. Valid values: {valid_values}",
+                ),
+                status.HTTP_400_BAD_REQUEST,
+            )
     if restock is not None:
         if restock.lower() not in ["true", "false"]:
             app.logger.error("Invalid restock value: %s", restock)
@@ -95,13 +117,16 @@ def list_inventory_items():
                 ),
                 status.HTTP_400_BAD_REQUEST,
             )
-        if restock and restock.lower() == "true":
+        if restock.lower() == "true":
             app.logger.info(
                 "Filtering for items needing restock (quantity <= restock_level)"
             )
-            query = query.filter(InventoryItem.quantity <= InventoryItem.restock_level)
+            query = query.filter(
+                InventoryItem.quantity <= InventoryItem.restock_level
+            )
 
-    items = query.order_by(InventoryItem.id).all()
+    items = query.all()
+
     results = [item.serialize() for item in items]
     app.logger.info("Returning %d inventory items", len(results))
     return jsonify(results), status.HTTP_200_OK

@@ -23,6 +23,7 @@ import os
 import logging
 from unittest import TestCase
 from unittest.mock import patch
+from urllib.parse import quote_plus
 from wsgi import app
 from service.common import status
 from service.common.cli_commands import db_create
@@ -586,6 +587,75 @@ class TestInventoryService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.get_json()
         self.assertEqual(len(data), 1)
+
+    # ----------------------------------------------------------
+    # TEST QUERY
+    # ----------------------------------------------------------
+    def test_query_by_product_id(self):
+        """It should Query Inventory Items by product_id"""
+        items = self._create_items(5)
+        test_product_id = items[0]["product_id"]
+        product_count = len(
+            [item for item in items if item["product_id"] == test_product_id]
+        )
+        response = self.client.get(
+            BASE_URL, query_string=f"product_id={quote_plus(test_product_id)}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), product_count)
+        for item in data:
+            self.assertEqual(item["product_id"], test_product_id)
+
+    def test_query_by_product_id_and_condition(self):
+        """It should Query Inventory Items by both product_id and condition"""
+        # Create items with known product_id and condition
+        item1 = InventoryItemFactory(product_id="PROD_COMBO", condition=Condition.NEW)
+        resp1 = self.client.post(BASE_URL, json=item1.serialize())
+        self.assertEqual(resp1.status_code, status.HTTP_201_CREATED)
+
+        item2 = InventoryItemFactory(product_id="PROD_COMBO", condition=Condition.USED)
+        resp2 = self.client.post(BASE_URL, json=item2.serialize())
+        self.assertEqual(resp2.status_code, status.HTTP_201_CREATED)
+
+        item3 = InventoryItemFactory(product_id="PROD_OTHER", condition=Condition.NEW)
+        resp3 = self.client.post(BASE_URL, json=item3.serialize())
+        self.assertEqual(resp3.status_code, status.HTTP_201_CREATED)
+
+        # Query by both product_id and condition
+        response = self.client.get(
+            BASE_URL, query_string="product_id=PROD_COMBO&condition=NEW"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["product_id"], "PROD_COMBO")
+        self.assertEqual(data[0]["condition"], "NEW")
+
+    def test_query_by_invalid_condition(self):
+        """It should return 400 for invalid condition query value"""
+        response = self.client.get(
+            BASE_URL, query_string="condition=DAMAGED"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = response.get_json()
+        self.assertIn("Invalid condition", data["message"])
+
+    def test_query_by_condition(self):
+        """It should Query Inventory Items by condition"""
+        items = self._create_items(10)
+        test_condition = items[0]["condition"]
+        condition_count = len(
+            [item for item in items if item["condition"] == test_condition]
+        )
+        response = self.client.get(
+            BASE_URL, query_string=f"condition={quote_plus(test_condition)}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), condition_count)
+        for item in data:
+            self.assertEqual(item["condition"], test_condition)
 
     # ----------------------------------------------------------
     # TEST DECREMENT
