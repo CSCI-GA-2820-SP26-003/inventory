@@ -529,3 +529,54 @@ class TestInventoryService(TestCase):
         response = self.client.get(BASE_URL)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.content_type, "application/json")
+
+    # ----------------------------------------------------------
+    # TEST DECREMENT
+    # ----------------------------------------------------------
+    def test_decrement_inventory_success(self):
+        """It should successfully decrement inventory quantity"""
+        test_item = InventoryItemFactory(quantity=10)
+        test_item.create()
+
+        payload = {"amount": 2, "orderId": "order_123"}
+        response = self.client.post(
+            f"{BASE_URL}/{test_item.public_id}/decrement", json=payload
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        new_data = response.get_json()
+        self.assertEqual(new_data["quantity"], 8)
+
+    def test_decrement_negative_amount(self):
+        """It should reject a negative decrement amount"""
+        test_item = InventoryItemFactory(quantity=10)
+        test_item.create()
+
+        payload = {"amount": -5, "orderId": "order_123"}
+        response = self.client.post(
+            f"{BASE_URL}/{test_item.public_id}/decrement", json=payload
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("quantity must be non-negative", response.get_json()["message"])
+
+    def test_decrement_insufficient_inventory(self):
+        """It should return 400 if inventory is insufficient"""
+        test_item = InventoryItemFactory(quantity=5)
+        test_item.create()
+
+        payload = {"amount": 10, "orderId": "order_123"}
+        response = self.client.post(
+            f"{BASE_URL}/{test_item.public_id}/decrement", json=payload
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.get_json()["message"], "INSUFFICIENT INVENTORY")
+
+    def test_decrement_item_not_found(self):
+        """It should return 404 when decrementing a non-existent item"""
+        payload = {"amount": 2, "orderId": "order_123"}
+        response = self.client.post(
+            f"{BASE_URL}/non-existent-id/decrement", json=payload
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
