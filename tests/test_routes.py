@@ -23,6 +23,7 @@ import os
 import logging
 from unittest import TestCase
 from unittest.mock import patch
+from urllib.parse import quote_plus
 from wsgi import app
 from service.common import status
 from service.common.cli_commands import db_create
@@ -529,6 +530,41 @@ class TestInventoryService(TestCase):
         response = self.client.get(BASE_URL)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.content_type, "application/json")
+
+    # ----------------------------------------------------------
+    # TEST QUERY
+    # ----------------------------------------------------------
+    def test_query_by_product_id(self):
+        """It should Query Inventory Items by product_id"""
+        items = self._create_items(5)
+        test_product_id = items[0]["product_id"]
+        product_count = len(
+            [item for item in items if item["product_id"] == test_product_id]
+        )
+        response = self.client.get(
+            BASE_URL, query_string=f"product_id={quote_plus(test_product_id)}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), product_count)
+        for item in data:
+            self.assertEqual(item["product_id"], test_product_id)
+
+    def test_query_by_condition(self):
+        """It should Query Inventory Items by condition"""
+        items = self._create_items(10)
+        test_condition = items[0]["condition"]
+        condition_count = len(
+            [item for item in items if item["condition"] == test_condition]
+        )
+        response = self.client.get(
+            BASE_URL, query_string=f"condition={quote_plus(test_condition)}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), condition_count)
+        for item in data:
+            self.assertEqual(item["condition"], test_condition)
 
     # ----------------------------------------------------------
     # TEST DECREMENT

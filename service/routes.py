@@ -73,10 +73,26 @@ def inventory_index():
 def list_inventory_items():
     """
     List all Inventory Items
-    This endpoint will return all Inventory Items ordered by id ascending
+    This endpoint will return all Inventory Items
     """
     app.logger.info("Request to List all Inventory Items...")
-    items = InventoryItem.query.order_by(InventoryItem.id).all()
+
+    items = []
+
+    # Parse any arguments from the query string
+    product_id = request.args.get("product_id")
+    condition = request.args.get("condition")
+
+    if product_id:
+        app.logger.info("Find by product_id: %s", product_id)
+        items = InventoryItem.find_by_name(product_id)
+    elif condition:
+        app.logger.info("Find by condition: %s", condition)
+        items = InventoryItem.find_by_condition(Condition[condition.upper()])
+    else:
+        app.logger.info("Find all")
+        items = InventoryItem.all()
+
     results = [item.serialize() for item in items]
     app.logger.info("Returning %d inventory items", len(results))
     return jsonify(results), status.HTTP_200_OK
