@@ -54,7 +54,7 @@ def index():
 ######################################################################
 @app.route("/inventory")
 def inventory_index():
-    """Inventory Root URL response""
+    """Inventory Root URL response"""
     app.logger.info("Request for inventory URL")
 
     return (
