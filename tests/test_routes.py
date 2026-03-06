@@ -531,6 +531,63 @@ class TestInventoryService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.content_type, "application/json")
 
+    def test_query_restock_items(self):
+        """It should query inventory items that need restocking (quantity <= restock_level)"""
+        # Create an item that definitely needs restocking (5 <= 10)
+        item_need = InventoryItemFactory(quantity=5, restock_level=10)
+        item_need.create()
+
+        # Create an item that is exactly at the limit (10 <= 10)
+        item_at_limit = InventoryItemFactory(quantity=10, restock_level=10)
+        item_at_limit.create()
+
+        # Create an item that does NOT need restocking (20 > 10)
+        item_ok = InventoryItemFactory(quantity=20, restock_level=10)
+        item_ok.create()
+
+        # Send GET request with the restock query parameter
+        response = self.client.get(BASE_URL, query_string="restock=true")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.get_json()
+        # Only the first two items should be returned
+        self.assertEqual(len(data), 2)
+
+        # Verify that all returned items satisfy the restock condition
+        for item in data:
+            self.assertTrue(item["quantity"] <= item["restock_level"])
+
+        # Verify specific IDs are present/absent
+        returned_ids = [item["id"] for item in data]
+        self.assertIn(item_need.id, returned_ids)
+        self.assertIn(item_at_limit.id, returned_ids)
+        self.assertNotIn(item_ok.id, returned_ids)
+
+    def test_query_restock_with_false(self):
+        """It should return all items when restock=false is passed"""
+        self._create_items(3)
+        response = self.client.get(BASE_URL, query_string="restock=false")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 3)
+
+    def test_query_restock_invalid_value(self):
+        """It should return 400 for invalid restock query value"""
+        response = self.client.get(BASE_URL, query_string="restock=invalid")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = response.get_json()
+        self.assertIn("Invalid value for 'restock'", data["message"])
+
+    def test_query_restock_items_from_correct_endpoint(self):
+        """It should query restock items from /inventory/items endpoint"""
+        item_need = InventoryItemFactory(quantity=5, restock_level=10)
+        item_need.create()
+
+        response = self.client.get(BASE_URL, query_string="restock=true")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 1)
+
     # ----------------------------------------------------------
     # TEST QUERY
     # ----------------------------------------------------------

@@ -56,6 +56,7 @@ def index():
 def inventory_index():
     """Inventory Root URL response"""
     app.logger.info("Request for inventory URL")
+
     return (
         jsonify(
             name="Inventory RESTful Service",
@@ -82,6 +83,7 @@ def list_inventory_items():
     # Parse any arguments from the query string
     product_id = request.args.get("product_id")
     condition = request.args.get("condition")
+    restock = request.args.get("restock")
 
     if product_id:
         app.logger.info("Find by product_id: %s", product_id)
@@ -89,6 +91,26 @@ def list_inventory_items():
     elif condition:
         app.logger.info("Find by condition: %s", condition)
         items = InventoryItem.find_by_condition(Condition[condition.upper()])
+    elif restock is not None:
+        if restock.lower() not in ["true", "false"]:
+            app.logger.error("Invalid restock value: %s", restock)
+            return (
+                jsonify(
+                    status=status.HTTP_400_BAD_REQUEST,
+                    error="Bad Request",
+                    message="Invalid value for 'restock'. Must be 'true' or 'false'.",
+                ),
+                status.HTTP_400_BAD_REQUEST,
+            )
+        if restock.lower() == "true":
+            app.logger.info(
+                "Filtering for items needing restock (quantity <= restock_level)"
+            )
+            items = InventoryItem.query.filter(
+                InventoryItem.quantity <= InventoryItem.restock_level
+            ).order_by(InventoryItem.id).all()
+        else:
+            items = InventoryItem.all()
     else:
         app.logger.info("Find all")
         items = InventoryItem.all()
