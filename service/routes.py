@@ -85,12 +85,18 @@ def list_inventory_items():
     condition = request.args.get("condition")
     restock = request.args.get("restock")
 
-    if product_id:
-        app.logger.info("Find by product_id: %s", product_id)
-        items = InventoryItem.find_by_name(product_id)
-    elif condition:
-        app.logger.info("Find by condition: %s", condition)
-        items = InventoryItem.find_by_condition(Condition[condition.upper()])
+    if product_id or condition:
+        app.logger.info("Filtering by query parameters")
+        query = InventoryItem.query
+        if product_id:
+            app.logger.info("Find by product_id: %s", product_id)
+            query = query.filter(InventoryItem.product_id == product_id)
+        if condition:
+            app.logger.info("Find by condition: %s", condition)
+            query = query.filter(
+                InventoryItem.condition == Condition[condition.upper()]
+            )
+        items = query.all()
     elif restock is not None:
         if restock.lower() not in ["true", "false"]:
             app.logger.error("Invalid restock value: %s", restock)
