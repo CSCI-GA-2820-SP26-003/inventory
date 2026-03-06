@@ -361,3 +361,66 @@ def update_inventory_item(public_id):
 
     app.logger.info("inventory item with ID: %d updated.", inventory_item.id)
     return jsonify(inventory_item.serialize()), status.HTTP_200_OK
+
+
+######################################################################
+# DECREMENT INVENTORY QUANTITY
+######################################################################
+@app.route("/inventory/items/<string:public_id>/decrement", methods=["POST"])
+def decrement_inventory_item(public_id):
+    """
+    Decrement the quantity of an inventory item
+    This endpoint will decrement the quantity of an item by a specific amount
+    """
+    app.logger.info("Request to Decrement inventory item with id [%s]", public_id)
+    check_content_type("application/json")
+
+    # Find Inventory Item by public id
+    inventory_item = InventoryItem.find_by_public_id(public_id)
+    if not inventory_item:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Inventory item with id '{public_id}' was not found.",
+        )
+
+    data = request.get_json()
+    if data is None or "amount" not in data:
+        return (
+            jsonify(
+                status=status.HTTP_400_BAD_REQUEST,
+                error="Bad Request",
+                message="Missing 'amount' in request body",
+            ),
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    amount = data.get("amount")
+
+    # Verify amount is non-negative
+    if not isinstance(amount, int) or amount < 0:
+        return (
+            jsonify(
+                status=status.HTTP_400_BAD_REQUEST,
+                error="Bad Request",
+                message="quantity must be non-negative",
+            ),
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    # Check storage
+    if inventory_item.quantity < amount:
+        return (
+            jsonify(
+                status=status.HTTP_400_BAD_REQUEST,
+                error="Bad Request",
+                message="INSUFFICIENT INVENTORY",
+            ),
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    # Decrement
+    inventory_item.quantity -= amount
+    inventory_item.update()
+
+    app.logger.info("Inventory item [%s] decremented by [%d]", public_id, amount)
+    return jsonify(inventory_item.serialize()), status.HTTP_200_OK
