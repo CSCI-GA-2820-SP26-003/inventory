@@ -632,6 +632,15 @@ class TestInventoryService(TestCase):
         self.assertEqual(data[0]["product_id"], "PROD_COMBO")
         self.assertEqual(data[0]["condition"], "NEW")
 
+    def test_query_by_invalid_condition(self):
+        """It should return 400 for invalid condition query value"""
+        response = self.client.get(
+            BASE_URL, query_string="condition=DAMAGED"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = response.get_json()
+        self.assertIn("Invalid condition", data["message"])
+
     def test_query_by_condition(self):
         """It should Query Inventory Items by condition"""
         items = self._create_items(10)

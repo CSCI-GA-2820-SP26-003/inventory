@@ -85,19 +85,28 @@ def list_inventory_items():
     condition = request.args.get("condition")
     restock = request.args.get("restock")
 
-    if product_id or condition:
-        app.logger.info("Filtering by query parameters")
-        query = InventoryItem.query
-        if product_id:
-            app.logger.info("Find by product_id: %s", product_id)
-            query = query.filter(InventoryItem.product_id == product_id)
-        if condition:
-            app.logger.info("Find by condition: %s", condition)
+    query = InventoryItem.query
+
+    if product_id:
+        app.logger.info("Find by product_id: %s", product_id)
+        query = query.filter(InventoryItem.product_id == product_id)
+    if condition:
+        app.logger.info("Find by condition: %s", condition)
+        try:
             query = query.filter(
                 InventoryItem.condition == Condition[condition.upper()]
             )
-        items = query.all()
-    elif restock is not None:
+        except KeyError:
+            valid_values = ", ".join(c.value for c in Condition)
+            return (
+                jsonify(
+                    status=status.HTTP_400_BAD_REQUEST,
+                    error="Bad Request",
+                    message=f"Invalid condition. Valid values: {valid_values}",
+                ),
+                status.HTTP_400_BAD_REQUEST,
+            )
+    if restock is not None:
         if restock.lower() not in ["true", "false"]:
             app.logger.error("Invalid restock value: %s", restock)
             return (
@@ -112,14 +121,11 @@ def list_inventory_items():
             app.logger.info(
                 "Filtering for items needing restock (quantity <= restock_level)"
             )
-            items = InventoryItem.query.filter(
+            query = query.filter(
                 InventoryItem.quantity <= InventoryItem.restock_level
-            ).order_by(InventoryItem.id).all()
-        else:
-            items = InventoryItem.all()
-    else:
-        app.logger.info("Find all")
-        items = InventoryItem.all()
+            )
+
+    items = query.all()
 
     results = [item.serialize() for item in items]
     app.logger.info("Returning %d inventory items", len(results))
