@@ -56,6 +56,7 @@ def index():
 def inventory_index():
     """Inventory Root URL response"""
     app.logger.info("Request for inventory URL")
+
     return (
         jsonify(
             name="Inventory RESTful Service",
@@ -74,9 +75,33 @@ def list_inventory_items():
     """
     List all Inventory Items
     This endpoint will return all Inventory Items ordered by id ascending
+    It can also filter by items needing restock: /inventory/items?restock=true
     """
     app.logger.info("Request to List all Inventory Items...")
-    items = InventoryItem.query.order_by(InventoryItem.id).all()
+
+    # Initialize the query
+    query = InventoryItem.query
+
+    # Check for restock query parameter
+    restock = request.args.get("restock")
+    if restock is not None:
+        if restock.lower() not in ["true", "false"]:
+            app.logger.error("Invalid restock value: %s", restock)
+            return (
+                jsonify(
+                    status=status.HTTP_400_BAD_REQUEST,
+                    error="Bad Request",
+                    message="Invalid value for 'restock'. Must be 'true' or 'false'.",
+                ),
+                status.HTTP_400_BAD_REQUEST,
+            )
+        if restock and restock.lower() == "true":
+            app.logger.info(
+                "Filtering for items needing restock (quantity <= restock_level)"
+            )
+            query = query.filter(InventoryItem.quantity <= InventoryItem.restock_level)
+
+    items = query.order_by(InventoryItem.id).all()
     results = [item.serialize() for item in items]
     app.logger.info("Returning %d inventory items", len(results))
     return jsonify(results), status.HTTP_200_OK
