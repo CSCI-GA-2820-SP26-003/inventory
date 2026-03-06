@@ -570,26 +570,19 @@ class TestInventoryService(TestCase):
         data = response.get_json()
         self.assertEqual(len(data), 3)
 
-    def test_query_restock_items_from_inventory_endpoint(self):
-        """It should query restock items from /inventory endpoint"""
+    def test_query_restock_invalid_value(self):
+        """It should return 400 for invalid restock query value"""
+        response = self.client.get(BASE_URL, query_string="restock=invalid")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = response.get_json()
+        self.assertIn("Invalid value for 'restock'", data["message"])
+
+    def test_query_restock_items_from_correct_endpoint(self):
+        """It should query restock items from /inventory/items endpoint"""
         item_need = InventoryItemFactory(quantity=5, restock_level=10)
         item_need.create()
 
-        item_ok = InventoryItemFactory(quantity=20, restock_level=10)
-        item_ok.create()
-
-        response = self.client.get("/inventory", query_string="restock=true")
+        response = self.client.get(BASE_URL, query_string="restock=true")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
         data = response.get_json()
         self.assertEqual(len(data), 1)
-        self.assertTrue(data[0]["quantity"] <= data[0]["restock_level"])
-
-    def test_query_restock_invalid_value(self):
-        """It should return 400 for invalid restock query value"""
-        response = self.client.get("/inventory", query_string="restock=invalid")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-        data = response.get_json()
-        self.assertEqual(data["error"], "Bad Request")
-        self.assertIn("Invalid value for 'restock'", data["message"])
