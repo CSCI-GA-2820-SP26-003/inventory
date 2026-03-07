@@ -641,6 +641,43 @@ class TestInventoryService(TestCase):
         data = response.get_json()
         self.assertIn("Invalid condition", data["message"])
 
+    def test_query_by_product_id_condition_and_restock(self):
+        """It should Query Inventory Items by product_id, condition, and restock"""
+        # Create item that matches all three filters
+        item1 = InventoryItemFactory(
+            product_id="PROD_ALL", condition=Condition.NEW,
+            quantity=5, restock_level=10
+        )
+        resp1 = self.client.post(BASE_URL, json=item1.serialize())
+        self.assertEqual(resp1.status_code, status.HTTP_201_CREATED)
+
+        # Same product_id, different condition, does NOT need restock
+        item2 = InventoryItemFactory(
+            product_id="PROD_ALL", condition=Condition.USED,
+            quantity=20, restock_level=10
+        )
+        resp2 = self.client.post(BASE_URL, json=item2.serialize())
+        self.assertEqual(resp2.status_code, status.HTTP_201_CREATED)
+
+        # Different product_id, needs restock
+        item3 = InventoryItemFactory(
+            product_id="PROD_OTHER", condition=Condition.NEW,
+            quantity=2, restock_level=10
+        )
+        resp3 = self.client.post(BASE_URL, json=item3.serialize())
+        self.assertEqual(resp3.status_code, status.HTTP_201_CREATED)
+
+        # Query with all three params
+        response = self.client.get(
+            BASE_URL,
+            query_string="product_id=PROD_ALL&condition=NEW&restock=true"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["product_id"], "PROD_ALL")
+        self.assertEqual(data[0]["condition"], "NEW")
+
     def test_query_by_condition(self):
         """It should Query Inventory Items by condition"""
         items = self._create_items(10)
