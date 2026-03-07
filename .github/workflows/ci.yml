@@ -53,3 +53,14 @@ jobs:
         run: pytest --pspec --cov=service --cov-fail-under=95 --cov-report=xml
         env:
           DATABASE_URI: "postgresql+psycopg://postgres:postgres@postgres:5432/postgres"
+
+
+# CODECOV ACTIONS
+      - name: Install packages for Codecov to work
+        run: apt-get update && apt-get install -y git curl gpg
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: CSCI-GA-2820-SP26-003/inventory
