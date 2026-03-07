@@ -2,6 +2,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/Language-Python-blue.svg)](https://python.org/)
+[![codecov](https://codecov.io/github/CSCI-GA-2820-SP26-003/inventory/graph/badge.svg?token=1BK66E13AX)](https://codecov.io/github/CSCI-GA-2820-SP26-003/inventory)
 
 The Inventory service is a RESTful API that tracks product stock levels and conditions for an e-commerce application. It is part of the NYU DevOps course project.
 
