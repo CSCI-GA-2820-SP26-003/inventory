@@ -43,25 +43,7 @@ def index():
     return (
         jsonify(
             url=url_for("index", _external=True),
-            resources={"inventory": url_for("inventory_index", _external=True)},
-        ),
-        status.HTTP_200_OK,
-    )
-
-
-######################################################################
-# GET INDEX
-######################################################################
-@app.route("/inventory")
-def inventory_index():
-    """Inventory Root URL response"""
-    app.logger.info("Request for inventory URL")
-
-    return (
-        jsonify(
-            name="Inventory RESTful Service",
-            version="1.0",
-            description="The inventory service tracks product stock levels and conditions.",
+            resources={"inventory": url_for("list_inventory_items", _external=True)},
         ),
         status.HTTP_200_OK,
     )
@@ -70,7 +52,7 @@ def inventory_index():
 ######################################################################
 # LIST ALL INVENTORY ITEMS
 ######################################################################
-@app.route("/inventory/items", methods=["GET"])
+@app.route("/inventory", methods=["GET"])
 def list_inventory_items():
     """
     List all Inventory Items
@@ -135,7 +117,7 @@ def list_inventory_items():
 ######################################################################
 # CREATE A NEW Inventory
 ######################################################################
-@app.route("/inventory/items", methods=["POST"])
+@app.route("/inventory", methods=["POST"])
 def create_inventory_items():
     """
     Create a Inventory Item
@@ -226,7 +208,7 @@ def create_inventory_items():
 ######################################################################
 # READ A SPECIFIC INVENTORY ITEM
 ######################################################################
-@app.route("/inventory/items/<public_id>", methods=["GET"])
+@app.route("/inventory/<public_id>", methods=["GET"])
 def get_inventory_items(public_id):
     """
     Retrieve a single Inventory Item
@@ -247,7 +229,7 @@ def get_inventory_items(public_id):
 ######################################################################
 # DELETE AN INVENTORY ITEM
 ######################################################################
-@app.route("/inventory/items/<public_id>", methods=["DELETE"])
+@app.route("/inventory/<public_id>", methods=["DELETE"])
 def delete_inventory_items(public_id):
     """
     Delete an Inventory Item
@@ -297,7 +279,7 @@ def check_content_type(content_type) -> None:
 ######################################################################
 # UPDATE AN EXISTING INVENTORY ITEM
 ######################################################################
-@app.route("/inventory/items/<string:public_id>", methods=["PUT"])
+@app.route("/inventory/<string:public_id>", methods=["PUT"])
 def update_inventory_item(public_id):
     """
     Update a inventory item
@@ -391,7 +373,7 @@ def update_inventory_item(public_id):
 ######################################################################
 # DECREMENT INVENTORY QUANTITY
 ######################################################################
-@app.route("/inventory/items/<string:public_id>/decrement", methods=["POST"])
+@app.route("/inventory/<string:public_id>/decrement", methods=["POST"])
 def decrement_inventory_item(public_id):
     """
     Decrement the quantity of an inventory item

@@ -35,7 +35,7 @@ DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
 )
 
-BASE_URL = "/inventory/items"
+BASE_URL = "/inventory"
 
 
 ######################################################################
@@ -73,18 +73,6 @@ class TestInventoryService(TestCase):
     ######################################################################
     #  P L A C E   T E S T   C A S E S   H E R E
     ######################################################################
-
-    def test_index(self):
-        """It should call the home page / inventory"""
-        resp = self.client.get("/inventory")
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        data = resp.get_json()
-        self.assertEqual(data["name"], "Inventory RESTful Service")
-        self.assertEqual(data["version"], "1.0")
-        self.assertEqual(
-            data["description"],
-            "The inventory service tracks product stock levels and conditions.",
-        )
 
     def test_root_url(self):
         """It should call the root URL and return service url and resources"""
@@ -579,7 +567,7 @@ class TestInventoryService(TestCase):
         self.assertIn("Invalid value for 'restock'", data["message"])
 
     def test_query_restock_items_from_correct_endpoint(self):
-        """It should query restock items from /inventory/items endpoint"""
+        """It should query restock items from /inventory endpoint"""
         item_need = InventoryItemFactory(quantity=5, restock_level=10)
         item_need.create()
 
