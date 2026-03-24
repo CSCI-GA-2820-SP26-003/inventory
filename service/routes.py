@@ -121,9 +121,7 @@ def list_inventory_items():
             app.logger.info(
                 "Filtering for items needing restock (quantity <= restock_level)"
             )
-            query = query.filter(
-                InventoryItem.quantity <= InventoryItem.restock_level
-            )
+            query = query.filter(InventoryItem.quantity <= InventoryItem.restock_level)
 
     items = query.all()
 
@@ -156,38 +154,15 @@ def create_inventory_items():
             status.HTTP_400_BAD_REQUEST,
         )
 
-    # Reject negative quantity
-    quantity = data.get("quantity", 0)
-    if not isinstance(quantity, int) or quantity < 0:
-        return (
-            jsonify(
-                status=status.HTTP_400_BAD_REQUEST,
-                error="Bad Request",
-                message="quantity must be non-negative",
-            ),
-            status.HTTP_400_BAD_REQUEST,
-        )
-
     inventory_item = InventoryItem()
     try:
         inventory_item.deserialize(data)
     except DataValidationError as err:
-        msg = str(err)
-        if "Condition" in msg or "condition" in msg.lower():
-            valid_values = ", ".join(c.value for c in Condition)
-            return (
-                jsonify(
-                    status=status.HTTP_400_BAD_REQUEST,
-                    error="Bad Request",
-                    message=f"Invalid condition. Valid values: {valid_values}",
-                ),
-                status.HTTP_400_BAD_REQUEST,
-            )
         return (
             jsonify(
                 status=status.HTTP_400_BAD_REQUEST,
                 error="Bad Request",
-                message=msg,
+                message=str(err),
             ),
             status.HTTP_400_BAD_REQUEST,
         )
