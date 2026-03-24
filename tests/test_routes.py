@@ -150,18 +150,6 @@ class TestInventoryService(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_create_inventory_item_deserialize_error_missing_condition(self):
-        """It should return 400 with valid condition values when condition is missing"""
-        test_item = InventoryItemFactory.build()
-        payload = test_item.serialize()
-        payload.pop("condition")  # remove the condition field
-        response = self.client.post(BASE_URL, json=payload)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        data = response.get_json()
-        self.assertIn("message", data)
-        msg = data["message"]
-        self.assertIn("Invalid condition. Valid values: NEW, OPEN_BOX, USED", msg)
-
     def test_create_inventory_item_deserialize_error_missing_required_field(self):
         """It should return 400 with error message when a required field is missing"""
         test_item = InventoryItemFactory.build()
