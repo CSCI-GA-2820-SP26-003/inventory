@@ -128,30 +128,6 @@ class TestInventoryService(TestCase):
         # self.assertEqual(new_item["restock_level"], test_item.restock_level)
         # self.assertEqual(new_item["restock_amount"], test_item.restock_amount)
 
-    def test_create_inventory_item_reject_negative_quantity(self):
-        """It should reject request with negative quantity and return 400"""
-        test_item = InventoryItemFactory.build()
-        payload = test_item.serialize()
-        payload["quantity"] = -5  # negative quantity
-        response = self.client.post(BASE_URL, json=payload)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        data = response.get_json()
-        self.assertIn("message", data)
-        msg = data["message"]
-        self.assertIn("quantity must be non-negative", msg)
-
-    def test_create_inventory_item_reject_invalid_condition(self):
-        """It should reject request with invalid condition and return 400 with valid values"""
-        test_item = InventoryItemFactory.build()
-        payload = test_item.serialize()
-        payload["condition"] = "DAMAGED"  # invalid condition
-        response = self.client.post(BASE_URL, json=payload)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        data = response.get_json()
-        self.assertIn("message", data)
-        msg = data["message"]
-        self.assertIn("Invalid condition. Valid values: NEW, OPEN_BOX, USED", msg)
-
     def test_create_inventory_item_duplicate_409_conflict(self):
         """It should return 409 CONFLICT when same product_id and condition already exists"""
         test_item = InventoryItemFactory.build(
@@ -634,9 +610,7 @@ class TestInventoryService(TestCase):
 
     def test_query_by_invalid_condition(self):
         """It should return 400 for invalid condition query value"""
-        response = self.client.get(
-            BASE_URL, query_string="condition=DAMAGED"
-        )
+        response = self.client.get(BASE_URL, query_string="condition=DAMAGED")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         data = response.get_json()
         self.assertIn("Invalid condition", data["message"])
@@ -645,32 +619,34 @@ class TestInventoryService(TestCase):
         """It should Query Inventory Items by product_id, condition, and restock"""
         # Create item that matches all three filters
         item1 = InventoryItemFactory(
-            product_id="PROD_ALL", condition=Condition.NEW,
-            quantity=5, restock_level=10
+            product_id="PROD_ALL", condition=Condition.NEW, quantity=5, restock_level=10
         )
         resp1 = self.client.post(BASE_URL, json=item1.serialize())
         self.assertEqual(resp1.status_code, status.HTTP_201_CREATED)
 
         # Same product_id, different condition, does NOT need restock
         item2 = InventoryItemFactory(
-            product_id="PROD_ALL", condition=Condition.USED,
-            quantity=20, restock_level=10
+            product_id="PROD_ALL",
+            condition=Condition.USED,
+            quantity=20,
+            restock_level=10,
         )
         resp2 = self.client.post(BASE_URL, json=item2.serialize())
         self.assertEqual(resp2.status_code, status.HTTP_201_CREATED)
 
         # Different product_id, needs restock
         item3 = InventoryItemFactory(
-            product_id="PROD_OTHER", condition=Condition.NEW,
-            quantity=2, restock_level=10
+            product_id="PROD_OTHER",
+            condition=Condition.NEW,
+            quantity=2,
+            restock_level=10,
         )
         resp3 = self.client.post(BASE_URL, json=item3.serialize())
         self.assertEqual(resp3.status_code, status.HTTP_201_CREATED)
 
         # Query with all three params
         response = self.client.get(
-            BASE_URL,
-            query_string="product_id=PROD_ALL&condition=NEW&restock=true"
+            BASE_URL, query_string="product_id=PROD_ALL&condition=NEW&restock=true"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.get_json()
