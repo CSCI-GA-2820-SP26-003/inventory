@@ -65,25 +65,20 @@ make lint
 
 All endpoints are under the base path `/inventory`.
 
-### Service Info
-
-| Method | URL | Description |
-|--------|-----|-------------|
-| `GET` | `/inventory` | Returns service name, version, and description |
-
 ### Inventory Items
 
 | Method | URL | Description |
 |--------|-----|-------------|
-| `GET` | `/inventory/items` | List all inventory items (ordered by id) |
-| `GET` | `/inventory/items/<public_id>` | Retrieve a single inventory item |
-| `POST` | `/inventory/items` | Create a new inventory item |
-| `PUT` | `/inventory/items/<public_id>` | Update an existing inventory item |
-| `DELETE` | `/inventory/items/<public_id>` | Delete an inventory item |
+| `GET` | `/inventory` | List all inventory items (ordered by id) |
+| `GET` | `/inventory/<public_id>` | Retrieve a single inventory item |
+| `POST` | `/inventory` | Create a new inventory item |
+| `PUT` | `/inventory/<public_id>` | Update an existing inventory item |
+| `DELETE` | `/inventory/<public_id>` | Delete an inventory item |
+| `POST` | `/inventory/<public_id>/decrement` | Decrement the quantity of an inventory item |
 
 ### Create an Inventory Item
 
-**`POST /inventory/items`**
+**`POST /inventory`**
 
 Request body (`application/json`):
 
@@ -111,7 +106,7 @@ Returns `201 Created` with the created item. Returns `409 Conflict` if an item w
 
 ### Update an Inventory Item
 
-**`PUT /inventory/items/<public_id>`**
+**`PUT /inventory/<public_id>`**
 
 Send a JSON body with the fields to update. All fields from the create payload are accepted.
 
@@ -119,7 +114,7 @@ Returns `200 OK` with the updated item, or `404 Not Found`.
 
 ### Delete an Inventory Item
 
-**`DELETE /inventory/items/<public_id>`**
+**`DELETE /inventory/<public_id>`**
 
 Returns `204 No Content`. This operation is idempotent — deleting a non-existent item still returns 204.
 
