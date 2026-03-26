@@ -38,15 +38,8 @@ from service.models import InventoryItem, Condition, DataValidationError
 
 @app.route("/")
 def index():
-    """Root URL response with service URL and available resources"""
-    app.logger.info("Request for root URL")
-    return (
-        jsonify(
-            url=url_for("index", _external=True),
-            resources={"inventory": url_for("list_inventory_items", _external=True)},
-        ),
-        status.HTTP_200_OK,
-    )
+    """Base URL for our service"""
+    return app.send_static_file("index.html")
 
 
 ######################################################################
