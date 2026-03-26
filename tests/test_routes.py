@@ -79,6 +79,7 @@ class TestInventoryService(TestCase):
         resp = self.client.get("/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertIn(b"Inventory REST API Service", resp.data)
+<<<<<<< HEAD
 
     # ----------------------------------------------------------
     # TEST HEALTH CHECK
@@ -89,6 +90,8 @@ class TestInventoryService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.get_json()
         self.assertEqual(data["status"], "OK")
+=======
+>>>>>>> 54b3c5b (feat: add basic inventory UI page)
 
     # ----------------------------------------------------------
     # TEST CREATE
