@@ -50,6 +50,15 @@ def index():
 
 
 ######################################################################
+# HEALTH CHECK
+######################################################################
+@app.route("/health")
+def health_check():
+    """Health check endpoint for Kubernetes probes"""
+    return jsonify(status="OK"), status.HTTP_200_OK
+
+
+######################################################################
 # LIST ALL INVENTORY ITEMS
 ######################################################################
 @app.route("/inventory", methods=["GET"])

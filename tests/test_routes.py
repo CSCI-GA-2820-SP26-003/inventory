@@ -84,6 +84,16 @@ class TestInventoryService(TestCase):
         self.assertIn("inventory", data["resources"])
 
     # ----------------------------------------------------------
+    # TEST HEALTH CHECK
+    # ----------------------------------------------------------
+    def test_health_check(self):
+        """It should return 200 OK on health check"""
+        response = self.client.get("/health")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data["status"], "OK")
+
+    # ----------------------------------------------------------
     # TEST CREATE
     # ----------------------------------------------------------
     def test_create_inventory_item(self):
