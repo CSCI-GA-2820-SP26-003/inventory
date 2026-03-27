@@ -40,7 +40,6 @@ from service.models import InventoryItem, Condition, DataValidationError
 def index():
     """Base URL for our service"""
     return app.send_static_file("index.html")
-<<<<<<< HEAD
 
 
 ######################################################################
@@ -50,8 +49,6 @@ def index():
 def health_check():
     """Health check endpoint for Kubernetes probes"""
     return jsonify(status="OK"), status.HTTP_200_OK
-=======
->>>>>>> 54b3c5b (feat: add basic inventory UI page)
 
 
 ######################################################################
