@@ -1,11 +1,6 @@
 # This image has selenium and chrome driver already installed
 FROM quay.io/rofrano/pipeline-selenium:sp26
 
-# Ensure Chromium and chromedriver are installed for BDD tests
-RUN sudo apt-get update && sudo apt-get install -y --no-install-recommends \
-    chromium-driver \
-    && sudo rm -rf /var/lib/apt/lists/*
-
 # Set up the Python development environment
 WORKDIR /app
 COPY Pipfile Pipfile.lock ./
