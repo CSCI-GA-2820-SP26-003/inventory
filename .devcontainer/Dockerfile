@@ -7,6 +7,8 @@ COPY Pipfile Pipfile.lock ./
 RUN sudo python -m pip install --upgrade pip pipenv && \
     sudo pipenv install --system --dev
 
+COPY config/insecure-registry.json /etc/docker/daemon.json 
+
 # Install user mode tools
 COPY .devcontainer/scripts/install-tools.sh /tmp/
 RUN cd /tmp && bash ./install-tools.sh

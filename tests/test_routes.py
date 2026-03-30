@@ -155,6 +155,26 @@ class TestInventoryService(TestCase):
         self.assertIn("message", data)
         self.assertIn("product_id", data["message"].lower())
 
+    def test_create_inventory_item_empty_product_id(self):
+        """It should return 400 when product_id is empty string"""
+        test_item = InventoryItemFactory.build()
+        payload = test_item.serialize()
+        payload["product_id"] = ""
+        response = self.client.post(BASE_URL, json=payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = response.get_json()
+        self.assertIn("product_id", data["message"].lower())
+
+    def test_create_inventory_item_negative_quantity(self):
+        """It should reject request with negative quantity and return 400"""
+        test_item = InventoryItemFactory.build()
+        payload = test_item.serialize()
+        payload["quantity"] = -5
+        response = self.client.post(BASE_URL, json=payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = response.get_json()
+        self.assertIn("quantity", data["message"].lower())
+
     def test_create_inventory_item_no_content_type_returns_415(self):
         """It should return 415 when Content-Type header is missing"""
         response = self.client.post(

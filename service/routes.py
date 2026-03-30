@@ -151,6 +151,17 @@ def create_inventory_items():
             status.HTTP_400_BAD_REQUEST,
         )
 
+    # Validate product_id is not empty
+    if not inventory_item.product_id or not inventory_item.product_id.strip():
+        return (
+            jsonify(
+                status=status.HTTP_400_BAD_REQUEST,
+                error="Bad Request",
+                message="Invalid InventoryItem: product_id must not be empty",
+            ),
+            status.HTTP_400_BAD_REQUEST,
+        )
+
     # Prevent duplicate (product_id + condition) -> 409 CONFLICT
     # query the database for the inventory item
     existing = InventoryItem.query.filter_by(
