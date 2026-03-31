@@ -100,3 +100,26 @@ Scenario: Create an Inventory Item with negative quantity
     And I set the "Restock Amount" to "20"
     And I press the "Create" button
     Then I should see the message "ck_quantity_non_negative"
+
+Scenario: Read an Inventory Item
+    When I visit the "Home Page"
+    And I set the "Product Id" to "PROD001"
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "PROD001" in the "Product Id" field
+    When I copy the "Id" field
+    And I press the "Clear" button
+    And I paste the "Id" field
+    And I press the "Retrieve" button
+    Then I should see the message "Success"
+    And I should see "PROD001" in the "Product Id" field
+    And I should see "New" in the "Condition" dropdown
+    And I should see "100" in the "Quantity" field
+    And I should see "20" in the "Restock Level" field
+    And I should see "50" in the "Restock Amount" field
+
+Scenario: Read an Inventory Item that does not exist
+    When I visit the "Home Page"
+    And I set the "Id" to "00000000-0000-0000-0000-000000000000"
+    And I press the "Retrieve" button
+    Then I should see the message "was not found"
