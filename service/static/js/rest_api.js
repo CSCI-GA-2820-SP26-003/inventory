@@ -209,7 +209,6 @@ $(function () {
         })
 
         ajax.done(function(res){
-            //alert(res.toSource())
             $("#search_results").empty();
             let table = '<table class="table table-striped" cellpadding="10">'
             table += '<thead><tr>'
@@ -220,23 +219,28 @@ $(function () {
             table += '<th class="col-md-2">Restock Level</th>'
             table += '<th class="col-md-2">Restock Amount</th>'
             table += '</tr></thead><tbody>'
+
             let firstItem = "";
-            for(let i = 0; i < res.length; i++) {
-                let item = res[i];
-                table +=  `<tr id="row_${i}"><td>${item.public_id}</td><td>${item.product_id}</td><td>${item.condition}</td><td>${item.quantity}</td><td>${item.restock_level}</td><td>${item.restock_amount}</td></tr>`;
-                if (i == 0) {
-                    firstItem = item;
+            if (res.length > 0) {
+                for(let i = 0; i < res.length; i++) {
+                    let item = res[i];
+                    table +=  `<tr id="row_${i}"><td>${item.public_id}</td><td>${item.product_id}</td><td>${item.condition}</td><td>${item.quantity}</td><td>${item.restock_level}</td><td>${item.restock_amount}</td></tr>`;
+                    if (i == 0) {
+                        firstItem = item;
+                    }
                 }
-            }
-            table += '</tbody></table>';
-            $("#search_results").append(table);
+                table += '</tbody></table>';
+                $("#search_results").append(table);
 
-            // copy the first result to the form
-            if (firstItem != "") {
-                update_form_data(firstItem)
+                if (firstItem != "") {
+                    update_form_data(firstItem);
+                }
+                flash_message("Success");
+            } else {
+                // Empty state handler
+                $("#search_results").append('<div class="text-center">No items found</div>');
+                flash_message("No items found");
             }
-
-            flash_message("Success")
         });
 
         ajax.fail(function(res){

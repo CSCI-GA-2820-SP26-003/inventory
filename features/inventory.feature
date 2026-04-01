@@ -123,3 +123,34 @@ Scenario: Read an Inventory Item that does not exist
     And I set the "Id" to "00000000-0000-0000-0000-000000000000"
     And I press the "Retrieve" button
     Then I should see the message "was not found"
+
+Scenario: Query by Product Id
+    When I visit the "Home Page"
+    And I set the "Product Id" to "PROD001"
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "PROD001" in the results
+    And I should not see "PROD002" in the results
+
+Scenario: Query by Condition
+    When I visit the "Home Page"
+    And I select "Used" in the "Condition" dropdown
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "PROD003" in the results
+    And I should not see "PROD001" in the results
+
+Scenario: Query by both Product Id and Condition
+    When I visit the "Home Page"
+    And I set the "Product Id" to "PROD001"
+    And I select "New" in the "Condition" dropdown
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "PROD001" in the results
+    And I should see "NEW" in the results
+
+Scenario: No Query Results Found
+    When I visit the "Home Page"
+    And I set the "Product Id" to "nonexistent"
+    And I press the "Search" button
+    Then I should see "No items found" in the results
