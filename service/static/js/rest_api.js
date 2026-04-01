@@ -271,17 +271,17 @@ $(function () {
         };
         $row.data("orig", orig);
 
-        cells.eq(1).html(`<input type="text" class="form-control input-sm" value="${orig.product_id}">`);
+        cells.eq(1).html(`<input type="text" class="form-control input-sm" data-field="product_id" value="${orig.product_id}">`);
         cells.eq(2).html(
-            `<select class="form-control input-sm">` +
+            `<select class="form-control input-sm" data-field="condition">` +
             `<option value="NEW" ${orig.condition === "NEW" ? "selected" : ""}>New</option>` +
             `<option value="OPEN_BOX" ${orig.condition === "OPEN_BOX" ? "selected" : ""}>Open Box</option>` +
             `<option value="USED" ${orig.condition === "USED" ? "selected" : ""}>Used</option>` +
             `</select>`
         );
-        cells.eq(3).html(`<input type="number" class="form-control input-sm" value="${orig.quantity}"><div class="text-danger small err-quantity"></div>`);
-        cells.eq(4).html(`<input type="number" class="form-control input-sm" value="${orig.restock_level}"><div class="text-danger small err-restock_level"></div>`);
-        cells.eq(5).html(`<input type="number" class="form-control input-sm" value="${orig.restock_amount}"><div class="text-danger small err-restock_amount"></div>`);
+        cells.eq(3).html(`<input type="number" class="form-control input-sm" data-field="quantity" value="${orig.quantity}"><div class="text-danger small err-quantity"></div>`);
+        cells.eq(4).html(`<input type="number" class="form-control input-sm" data-field="restock_level" value="${orig.restock_level}"><div class="text-danger small err-restock_level"></div>`);
+        cells.eq(5).html(`<input type="number" class="form-control input-sm" data-field="restock_amount" value="${orig.restock_amount}"><div class="text-danger small err-restock_amount"></div>`);
         cells.eq(6).html(
             `<button class="btn btn-xs btn-success save-row-btn">Save</button> ` +
             `<button class="btn btn-xs btn-default cancel-row-btn">Cancel</button>`

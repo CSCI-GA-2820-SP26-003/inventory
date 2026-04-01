@@ -125,88 +125,36 @@ Scenario: Read an Inventory Item that does not exist
     Then I should see the message "was not found"
 
 # update
-# Scenario: Update an Inventory Item
-#     When I visit the "Home Page"
-#     And I set the "Product Id" to "PROD001"
-#     And I press the "Search" button
-#     Then I should see the message "Success"
-#     And I should see "PROD001" in the "Product Id" field
-#     And I should see "100" in the "Quantity" field
-#     When I set the "Quantity" to "200"
-#     And I press the "Update" button
-#     Then I should see the message "Success"
-#     When I copy the "Id" field
-#     And I press the "Clear" button
-#     And I paste the "Id" field
-#     And I press the "Retrieve" button 
-#     Then I should see the message "Success"
-#     And I should see "200" in the "Quantity" field
+Scenario: Update an Inventory Item via inline edit
+    When I visit the "Home Page"
+    And I set the "Product Id" to "PROD001"
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "PROD001" in the results
+    When I click the "Edit" button in the results table
+    And I set the row "Quantity" field to "200"
+    And I press the "Save" button in the results table
+    Then I should see the message "Success"
+    And I should see "200" in the results
 
-# Scenario: Update an Inventory Item with invalid quantity
-#     When I visit the "Home Page"
-#     And I set the "Product Id" to "PROD001"
-#     And I press the "Search" button
-#     Then I should see the message "Success"
-#     When I set the "Quantity" to "-10"
-#     And I press the "Update" button
-#     Then I should see the message "quantity must be non-negative"
+Scenario: Update an Inventory Item with invalid quantity
+    When I visit the "Home Page"
+    And I set the "Product Id" to "PROD001"
+    And I press the "Search" button
+    Then I should see the message "Success"
+    When I click the "Edit" button in the results table
+    And I set the row "Quantity" field to "-10"
+    And I press the "Save" button in the results table
+    Then I should see an error for the row "Quantity" field
 
-# Scenario: Update an Inventory Item that does not exist
-#     When I visit the "Home Page"
-#     And I set the "Id" to "00000000-0000-0000-0000-000000000000"
-#     And I set the "Product Id" to "PROD001"
-#     And I set the "Quantity" to "200"
-#     And I press the "Update" button
-#     Then I should see the message "was not found"
-
-# Scenario: Update an Inventory Item restock level and restock amount
-#     When I visit the "Home Page"
-#     And I set the "Product Id" to "PROD001"
-#     And I press the "Search" button
-#     Then I should see the message "Success"
-#     When I set the "Restock Level" to "30"
-#     And I set the "Restock Amount" to "60"
-#     And I press the "Update" button
-#     Then I should see the message "Success"
-#     When I copy the "Id" field
-#     And I press the "Clear" button
-#     And I paste the "Id" field
-#     And I press the "Retrieve" button 
-#     Then I should see the message "Success"
-#     And I should see "30" in the "Restock Level" field
-#     And I should see "60" in the "Restock Amount" field
-
-# Scenario: Update an Inventory Item condition
-#     When I visit the "Home Page"
-#     And I set the "Product Id" to "PROD001"
-#     And I press the "Search" button
-#     Then I should see the message "Success"
-#     When I select "Used" in the "Condition" dropdown
-#     And I press the "Update" button
-#     Then I should see the message "Success"
-#     When I copy the "Id" field
-#     And I press the "Clear" button
-#     And I paste the "Id" field
-#     And I press the "Retrieve" button 
-#     Then I should see the message "Success"
-#     And I should see "Used" in the "Condition" dropdown
-
-# Scenario: Update multiple fields of an Inventory Item
-#     When I visit the "Home Page"
-#     And I set the "Product Id" to "PROD002"
-#     And I select "Open Box" in the "Condition" dropdown
-#     And I press the "Search" button
-#     Then I should see the message "Success"
-#     When I set the "Quantity" to "50"
-#     And I set the "Restock Level" to "15"
-#     And I set the "Restock Amount" to "30"
-#     And I press the "Update" button
-#     Then I should see the message "Success"
-#     When I copy the "Id" field
-#     And I press the "Clear" button
-#     And I paste the "Id" field
-#     And I press the "Retrieve" button 
-#     Then I should see the message "Success"
-#     And I should see "50" in the "Quantity" field
-#     And I should see "15" in the "Restock Level" field
-#     And I should see "30" in the "Restock Amount" field
+Scenario: Cancel editing an Inventory Item
+    When I visit the "Home Page"
+    And I set the "Product Id" to "PROD001"
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "100" in the results
+    When I click the "Edit" button in the results table
+    And I set the row "Quantity" field to "999"
+    And I press the "Cancel" button in the results table
+    Then I should see "100" in the results
+    And I should not see "999" in the results
