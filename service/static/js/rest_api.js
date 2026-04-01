@@ -219,11 +219,20 @@ $(function () {
             table += '<th class="col-md-2">Quantity</th>'
             table += '<th class="col-md-2">Restock Level</th>'
             table += '<th class="col-md-2">Restock Amount</th>'
+            table += '<th class="col-md-2">Update</th>'
             table += '</tr></thead><tbody>'
             let firstItem = "";
             for(let i = 0; i < res.length; i++) {
                 let item = res[i];
-                table +=  `<tr id="row_${i}"><td>${item.public_id}</td><td>${item.product_id}</td><td>${item.condition}</td><td>${item.quantity}</td><td>${item.restock_level}</td><td>${item.restock_amount}</td></tr>`;
+                table += `<tr id="row_${i}" data-public-id="${item.public_id}">` +
+                    `<td>${item.public_id}</td>` +
+                    `<td>${item.product_id}</td>` +
+                    `<td>${item.condition}</td>` +
+                    `<td>${item.quantity}</td>` +
+                    `<td>${item.restock_level}</td>` +
+                    `<td>${item.restock_amount}</td>` +
+                    `<td><button class="btn btn-xs btn-warning edit-row-btn">Edit</button></td>` +
+                    `</tr>`;
                 if (i == 0) {
                     firstItem = item;
                 }
@@ -245,4 +254,121 @@ $(function () {
 
     });
 
+    // ****************************************
+    // Edit button in search results row
+    // ****************************************
+
+    $("#search_results").on("click", ".edit-row-btn", function () {
+        let $row = $(this).closest("tr");
+        let cells = $row.find("td");
+
+        let orig = {
+            product_id: cells.eq(1).text(),
+            condition: cells.eq(2).text(),
+            quantity: cells.eq(3).text(),
+            restock_level: cells.eq(4).text(),
+            restock_amount: cells.eq(5).text()
+        };
+        $row.data("orig", orig);
+
+        cells.eq(1).html(`<input type="text" class="form-control input-sm" value="${orig.product_id}">`);
+        cells.eq(2).html(
+            `<select class="form-control input-sm">` +
+            `<option value="NEW" ${orig.condition === "NEW" ? "selected" : ""}>New</option>` +
+            `<option value="OPEN_BOX" ${orig.condition === "OPEN_BOX" ? "selected" : ""}>Open Box</option>` +
+            `<option value="USED" ${orig.condition === "USED" ? "selected" : ""}>Used</option>` +
+            `</select>`
+        );
+        cells.eq(3).html(`<input type="number" class="form-control input-sm" value="${orig.quantity}"><div class="text-danger small err-quantity"></div>`);
+        cells.eq(4).html(`<input type="number" class="form-control input-sm" value="${orig.restock_level}"><div class="text-danger small err-restock_level"></div>`);
+        cells.eq(5).html(`<input type="number" class="form-control input-sm" value="${orig.restock_amount}"><div class="text-danger small err-restock_amount"></div>`);
+        cells.eq(6).html(
+            `<button class="btn btn-xs btn-success save-row-btn">Save</button> ` +
+            `<button class="btn btn-xs btn-default cancel-row-btn">Cancel</button>`
+        );
+    });
+
+    // ****************************************
+    // Cancel button in search results row
+    // ****************************************
+
+    $("#search_results").on("click", ".cancel-row-btn", function () {
+        let $row = $(this).closest("tr");
+        let orig = $row.data("orig");
+        let cells = $row.find("td");
+
+        cells.eq(1).text(orig.product_id);
+        cells.eq(2).text(orig.condition);
+        cells.eq(3).text(orig.quantity);
+        cells.eq(4).text(orig.restock_level);
+        cells.eq(5).text(orig.restock_amount);
+        cells.eq(6).html(`<button class="btn btn-xs btn-warning edit-row-btn">Edit</button>`);
+    });
+
+    // ****************************************
+    // Save button in search results row
+    // ****************************************
+
+    $("#search_results").on("click", ".save-row-btn", function () {
+        let $row = $(this).closest("tr");
+        let cells = $row.find("td");
+        let public_id = $row.data("public-id");
+
+        let product_id = cells.eq(1).find("input").val();
+        let condition = cells.eq(2).find("select").val();
+        let quantity = parseInt(cells.eq(3).find("input").val());
+        let restock_level = parseInt(cells.eq(4).find("input").val());
+        let restock_amount = parseInt(cells.eq(5).find("input").val());
+
+        // Client-side validation
+        let valid = true;
+        $row.find(".err-quantity").text("");
+        $row.find(".err-restock_level").text("");
+        $row.find(".err-restock_amount").text("");
+
+        if (isNaN(quantity) || quantity < 0) {
+            $row.find(".err-quantity").text("Must be a non-negative integer");
+            valid = false;
+        }
+        if (isNaN(restock_level) || restock_level < 0) {
+            $row.find(".err-restock_level").text("Must be a non-negative integer");
+            valid = false;
+        }
+        if (isNaN(restock_amount) || restock_amount < 0) {
+            $row.find(".err-restock_amount").text("Must be a non-negative integer");
+            valid = false;
+        }
+        if (!valid) return;
+
+        let data = {
+            "product_id": product_id,
+            "condition": condition,
+            "quantity": quantity,
+            "restock_level": restock_level,
+            "restock_amount": restock_amount
+        };
+
+        $("#flash_message").empty();
+
+        let ajax = $.ajax({
+            type: "PUT",
+            url: `/inventory/${public_id}`,
+            contentType: "application/json",
+            data: JSON.stringify(data)
+        });
+
+        ajax.done(function (res) {
+            cells.eq(1).text(res.product_id);
+            cells.eq(2).text(res.condition);
+            cells.eq(3).text(res.quantity);
+            cells.eq(4).text(res.restock_level);
+            cells.eq(5).text(res.restock_amount);
+            cells.eq(6).html(`<button class="btn btn-xs btn-warning edit-row-btn">Edit</button>`);
+            flash_message("Success");
+        });
+
+        ajax.fail(function (res) {
+            flash_message(res.responseJSON.message);
+        });
+    });
 })
