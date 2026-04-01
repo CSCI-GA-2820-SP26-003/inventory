@@ -70,47 +70,6 @@ $(function () {
 
 
     // ****************************************
-    // Update an Inventory Item
-    // ****************************************
-
-    $("#update-btn").click(function () {
-
-        let item_id = $("#item_id").val();
-        let product_id = $("#item_product_id").val();
-        let condition = $("#item_condition").val();
-        let quantity = parseInt($("#item_quantity").val());
-        let restock_level = parseInt($("#item_restock_level").val());
-        let restock_amount = parseInt($("#item_restock_amount").val());
-
-        let data = {
-            "product_id": product_id,
-            "condition": condition,
-            "quantity": quantity,
-            "restock_level": restock_level,
-            "restock_amount": restock_amount
-        };
-
-        $("#flash_message").empty();
-
-        let ajax = $.ajax({
-                type: "PUT",
-                url: `/inventory/${item_id}`,
-                contentType: "application/json",
-                data: JSON.stringify(data)
-            })
-
-        ajax.done(function(res){
-            update_form_data(res)
-            flash_message("Success")
-        });
-
-        ajax.fail(function(res){
-            flash_message(res.responseJSON.message)
-        });
-
-    });
-
-    // ****************************************
     // Retrieve an Inventory Item
     // ****************************************
 
@@ -178,7 +137,7 @@ $(function () {
     });
 
     // ****************************************
-    // Search for Inventory Items
+    // Search for Inventory Items in results table
     // ****************************************
 
     $("#search-btn").click(function () {
