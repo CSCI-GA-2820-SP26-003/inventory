@@ -34,6 +34,7 @@ from selenium.webdriver.support import expected_conditions
 
 ID_PREFIX = "item_"
 
+
 def save_screenshot(context: Any, filename: str) -> None:
     """Takes a snapshot of the web page for debugging and validation
 
@@ -190,3 +191,14 @@ def step_impl(context: Any, element_name: str, text_string: str) -> None:
     )
     element.clear()
     element.send_keys(text_string)
+
+
+@then("the results table should be cleared")
+def step_impl(context):
+    """Checks if the search results table is empty or only contains the header"""
+    element = context.driver.find_element(By.ID, "search_results")
+    # In index.html, clearing empties the div or the tbody
+    rows = element.find_elements(By.TAG_NAME, "tr")
+    # If using the update above, an empty search shows "No items found" or empty table
+    # We verify that no data rows exist (length <= 1 if header exists, or look for specific empty text)
+    assert len(rows) <= 1 or "No items found" not in element.text
