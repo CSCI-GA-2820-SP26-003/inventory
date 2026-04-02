@@ -124,6 +124,20 @@ Scenario: Read an Inventory Item that does not exist
     And I press the "Retrieve" button
     Then I should see the message "was not found"
 
+Scenario: Delete an Inventory Item
+    When I visit the "Home Page"
+    And I set the "Product Id" to "PROD001"
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "PROD001" in the "Product Id" field
+    When I press the "Delete" button
+    Then I should see the message "Item has been Deleted!"
+    When I press the "Clear" button
+    And I set the "Product Id" to "PROD001"
+    And I press the "Search" button
+    Then I should see the message "No items found" 
+    And I should not see "PROD001" in the results
+
 Scenario: Query by Product Id
     When I visit the "Home Page"
     And I set the "Product Id" to "PROD001"
