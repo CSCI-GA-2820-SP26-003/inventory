@@ -168,3 +168,12 @@ Scenario: No Query Results Found
     And I set the "Product Id" to "nonexistent"
     And I press the "Search" button
     Then I should see "No items found" in the results
+
+Scenario: List all inventory items successfully
+    When I visit the "Home Page"
+    And I press the "List All" button
+    Then I should see the message "Success"
+    And I should see "PROD001" in the results
+    And I should see "PROD002" in the results
+    And I should see "PROD003" in the results
+    And I should see "PROD004" in the results

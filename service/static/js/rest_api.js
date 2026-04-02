@@ -249,4 +249,69 @@ $(function () {
 
     });
 
+
+
+
+
+
+    // ****************************************
+    // List all Inventory Items
+    // ****************************************
+
+    $("#list_all-btn").click(function () {
+
+        $("#flash_message").empty();
+
+        let ajax = $.ajax({
+            type: "GET",
+            url: "/inventory",
+            contentType: "application/json",
+            data: ''
+        });
+
+        ajax.done(function(res){
+
+            // Clear previous results
+            $("#search_results").empty();
+
+            // Handle empty state
+            if (res.length === 0) {
+                flash_message("No inventory items found");
+                return;
+            }
+            // build full table like in search
+            let table = '<table class="table table-striped" cellpadding="10">';
+            table += '<thead><tr>';
+            table += '<th class="col-md-2">ID</th>';
+            table += '<th class="col-md-2">Product ID</th>';
+            table += '<th class="col-md-2">Condition</th>';
+            table += '<th class="col-md-2">Quantity</th>';
+            table += '<th class="col-md-2">Restock Level</th>';
+            table += '<th class="col-md-2">Restock Amount</th>';
+            table += '</tr></thead><tbody>';
+
+            for (let i = 0; i < res.length; i++) {
+                let item = res[i];
+                table += `<tr id="row_${i}">
+                    <td>${item.public_id}</td>
+                    <td>${item.product_id}</td>
+                    <td>${item.condition}</td>
+                    <td>${item.quantity}</td>
+                    <td>${item.restock_level}</td>
+                    <td>${item.restock_amount}</td>
+                </tr>`;
+            }
+
+            table += '</tbody></table>';
+            $("#search_results").append(table);
+
+            flash_message("Success");
+        });
+
+        ajax.fail(function(res){
+            $("#search_results").empty();
+            flash_message(res.responseJSON.message);
+        });
+    });
+
 })
