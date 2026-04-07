@@ -315,3 +315,19 @@ Scenario: Update restock_level and restock_amount via inline edit
     Then I should see the message "Success"
     And I should see "35" in the results
     And I should see "45" in the results
+
+Scenario: Restock an Inventory Item
+    When I visit the "Home Page"
+    And I set the "Product Id" to "PROD003"
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "PROD003" in the results
+    When I copy the "Id" field
+    And I press the "Retrieve" button
+    Then I should see the message "Success"
+    And I should see "PROD003" in the "Product Id" field
+    And I should see "5" in the "Quantity" field
+    And I should see "40" in the "Restock Amount" field
+    When I press the "Restock" button
+    Then I should see the message "Success"
+    And I should see "45" in the "Quantity" field

@@ -419,3 +419,30 @@ def decrement_inventory_item(public_id):
 
     app.logger.info("Inventory item [%s] decremented by [%d]", public_id, amount)
     return jsonify(inventory_item.serialize()), status.HTTP_200_OK
+
+
+######################################################################
+# RESTOCK INVENTORY ITEM
+######################################################################
+@app.route("/inventory/<string:public_id>/restock", methods=["POST"])
+def restock_inventory_item(public_id):
+    """
+    Restock an inventory item
+    This endpoint will increase the quantity of an item by its restock_amount
+    """
+    app.logger.info("Request to Restock inventory item with id [%s]", public_id)
+
+    # Find Inventory Item by public id
+    inventory_item = InventoryItem.find_by_public_id(public_id)
+    if not inventory_item:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Inventory item with id '{public_id}' was not found.",
+        )
+
+    # Restock: add restock_amount to quantity
+    inventory_item.quantity += inventory_item.restock_amount
+    inventory_item.update()
+
+    app.logger.info("Inventory item [%s] restocked by [%d]", public_id, inventory_item.restock_amount)
+    return jsonify(inventory_item.serialize()), status.HTTP_200_OK
