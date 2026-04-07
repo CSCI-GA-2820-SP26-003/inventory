@@ -169,6 +169,70 @@ Scenario: No Query Results Found
     And I press the "Search" button
     Then I should see "No items found" in the results
 
+Scenario: Filter by quantity range
+    When I visit the "Home Page"
+    And I enter "20" in the "quantity min" filter field
+    And I enter "80" in the "quantity max" filter field
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "PROD002" in the results
+    And I should see "PROD004" in the results
+    And I should not see "PROD001" in the results
+    And I should not see "PROD003" in the results
+
+Scenario: Filter by restock_level range
+    When I visit the "Home Page"
+    And I enter "12" in the "restock_level min" filter field
+    And I enter "22" in the "restock_level max" filter field
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "PROD001" in the results
+    And I should see "PROD003" in the results
+    And I should not see "PROD002" in the results
+    And I should not see "PROD004" in the results
+
+Scenario: Filter by restock_amount range
+    When I visit the "Home Page"
+    And I enter "35" in the "restock_amount min" filter field
+    And I enter "45" in the "restock_amount max" filter field
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "PROD003" in the results
+    And I should not see "PROD001" in the results
+    And I should not see "PROD002" in the results
+    And I should not see "PROD004" in the results
+
+Scenario: Filter by condition and quantity range combined
+    When I visit the "Home Page"
+    And I select "New" in the "Condition" dropdown
+    And I enter "80" in the "quantity min" filter field
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "PROD001" in the results
+    And I should not see "PROD002" in the results
+    And I should not see "PROD003" in the results
+    And I should not see "PROD004" in the results
+
+Scenario: No items match the filter
+    When I visit the "Home Page"
+    And I select "Open Box" in the "Condition" dropdown
+    And I enter "200" in the "quantity min" filter field
+    And I press the "Search" button
+    Then I should see "No items found" in the results
+
+Scenario: Invalid numeric filter input (negative)
+    When I visit the "Home Page"
+    And I enter "-10" in the "quantity min" filter field
+    And I press the "Search" button
+    Then I should see a filter error for the "quantity" field
+
+Scenario: Min value greater than max value
+    When I visit the "Home Page"
+    And I enter "100" in the "quantity min" filter field
+    And I enter "50" in the "quantity max" filter field
+    And I press the "Search" button
+    Then I should see a filter error for the "quantity" field
+
 # update
 Scenario: Update an Inventory Item via inline edit
     When I visit the "Home Page"

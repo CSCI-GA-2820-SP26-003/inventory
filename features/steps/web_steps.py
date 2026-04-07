@@ -271,3 +271,25 @@ def step_impl(context: Any, field_name: str) -> None:
         )
     )
     assert error_div.text != ""
+
+
+##################################################################
+# Steps for numeric range filter inputs
+##################################################################
+
+
+@when('I enter "{value}" in the "{field}" filter field')
+def step_impl(context: Any, value: str, field: str) -> None:
+    field_id = "filter_" + field.lower().replace(" ", "_")
+    element = context.driver.find_element(By.ID, field_id)
+    element.clear()
+    element.send_keys(value)
+
+
+@then('I should see a filter error for the "{field}" field')
+def step_impl(context: Any, field: str) -> None:
+    field_id = "err_" + field.lower().replace(" ", "_")
+    error_span = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.presence_of_element_located((By.ID, field_id))
+    )
+    assert error_span.text != ""

@@ -53,7 +53,8 @@
               <label class="control-label col-sm-2" for="item_condition">Condition:</label>
               <div class="col-sm-10">
                 <select class="form-control" id="item_condition">
-                  <option value="NEW" selected>New</option>
+                  <option value="" selected>Any</option>
+                  <option value="NEW">New</option>
                   <option value="OPEN_BOX">Open Box</option>
                   <option value="USED">Used</option>
                 </select>
@@ -84,6 +85,39 @@
               </div>
             </div>
 
+            <!-- FILTER RANGES -->
+            <div class="form-group">
+              <label class="control-label col-sm-2">Quantity Range:</label>
+              <div class="col-sm-4">
+                <input type="number" class="form-control" id="filter_quantity_min" placeholder="Min">
+                <span class="text-danger" id="err_quantity"></span>
+              </div>
+              <div class="col-sm-4">
+                <input type="number" class="form-control" id="filter_quantity_max" placeholder="Max">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="control-label col-sm-2">Restock Level Range:</label>
+              <div class="col-sm-4">
+                <input type="number" class="form-control" id="filter_restock_level_min" placeholder="Min">
+                <span class="text-danger" id="err_restock_level"></span>
+              </div>
+              <div class="col-sm-4">
+                <input type="number" class="form-control" id="filter_restock_level_max" placeholder="Max">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="control-label col-sm-2">Restock Amount Range:</label>
+              <div class="col-sm-4">
+                <input type="number" class="form-control" id="filter_restock_amount_min" placeholder="Min">
+                <span class="text-danger" id="err_restock_amount"></span>
+              </div>
+              <div class="col-sm-4">
+                <input type="number" class="form-control" id="filter_restock_amount_max" placeholder="Max">
+              </div>
+            </div>
 
             <!-- SUBMIT BUTTONS -->
             <div class="form-group">
