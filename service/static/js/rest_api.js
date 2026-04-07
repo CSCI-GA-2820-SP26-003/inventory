@@ -218,8 +218,6 @@ $(function () {
         })
 
         ajax.done(function(res){
-            //alert(res.toSource())
-            // Client-side filter by numeric ranges
             let qMin = qMinVal.trim() === "" ? NaN : Number(qMinVal);
             let qMax = qMaxVal.trim() === "" ? NaN : Number(qMaxVal);
             let rlMin = rlMinVal.trim() === "" ? NaN : Number(rlMinVal);
@@ -240,13 +238,14 @@ $(function () {
             $("#search_results").empty();
             let table = '<table class="table table-striped" cellpadding="10">'
             table += '<thead><tr>'
-            table += '<th class="col-md-2">ID</th>'
+            table += '<th class="col-md-1">ID</th>'
             table += '<th class="col-md-2">Product ID</th>'
             table += '<th class="col-md-2">Condition</th>'
-            table += '<th class="col-md-2">Quantity</th>'
+            table += '<th class="col-md-1">Quantity</th>'
             table += '<th class="col-md-2">Restock Level</th>'
             table += '<th class="col-md-2">Restock Amount</th>'
-            table += '<th class="col-md-2">Update</th>'
+            table += '<th class="col-md-1">Update</th>'
+            table += '<th class="col-md-1">Decrement</th>'
             table += '</tr></thead><tbody>'
 
             let firstItem = "";
@@ -261,6 +260,7 @@ $(function () {
                         `<td>${item.restock_level}</td>` +
                         `<td>${item.restock_amount}</td>` +
                         `<td><button class="btn btn-xs btn-warning edit-row-btn">Edit</button></td>` +
+                        `<td><button class="btn btn-xs btn-info decrement-row-btn">Decrement</button></td>` +
                         `</tr>`;
                     if (i == 0) {
                         firstItem = item;
@@ -274,7 +274,6 @@ $(function () {
                 }
                 flash_message("Success");
             } else {
-                // Empty state handler
                 $("#search_results").append('<div class="text-center">No items found</div>');
                 flash_message("No items found");
             }
@@ -412,6 +411,56 @@ $(function () {
 
         ajax.fail(function (res) {
             flash_message(res.responseJSON.message);
+        });
+    });
+
+    $("#search_results").on("click", ".decrement-row-btn", function () {
+        let $row = $(this).closest("tr");
+        let $qtyCell = $row.find("td").eq(3);
+        let currentQty = $qtyCell.text();
+        $("#flash_message").empty();
+        $row.data("orig-qty", currentQty);
+        $qtyCell.html(
+            `<input type="number" class="form-control input-sm" id="decrement_amount" placeholder="Amount">` +
+            `<div class="text-danger small err-decrement"></div>`
+        );
+        $row.find("td").eq(7).html(
+            `<button class="btn btn-xs btn-success confirm-decrement-btn">Confirm</button> ` +
+            `<button class="btn btn-xs btn-default cancel-decrement-btn">Cancel</button>`
+        );
+    });
+
+    $("#search_results").on("click", ".cancel-decrement-btn", function () {
+        let $row = $(this).closest("tr");
+        let origQty = $row.data("orig-qty");
+        $row.find("td").eq(3).text(origQty);
+        $row.find("td").eq(7).html(`<button class="btn btn-xs btn-info decrement-row-btn">Decrement</button>`);
+    });
+
+    $("#search_results").on("click", ".confirm-decrement-btn", function () {
+        let $row = $(this).closest("tr");
+        let public_id = $row.data("public-id");
+        let amountVal = $row.find("#decrement_amount").val();
+        let amount = parseInt(amountVal);
+        let $errorDiv = $row.find(".err-decrement");
+        $("#flash_message").empty();
+        if (isNaN(amount) || amount <= 0) {
+            $errorDiv.text("Must be a positive integer");
+            return;
+        }
+        $.ajax({
+            type: "POST",
+            url: `/inventory/${public_id}/decrement`,
+            contentType: "application/json",
+            data: JSON.stringify({ "amount": amount })
+        }).done(function (res) {
+            $row.find("td").eq(3).text(res.quantity);
+            $row.find("td").eq(7).html(`<button class="btn btn-xs btn-info decrement-row-btn">Decrement</button>`);
+            flash_message("Success");
+        }).fail(function (res) {
+            let msg = res.responseJSON ? res.responseJSON.message : "Server error!";
+            $errorDiv.text(msg);
+            flash_message(msg);
         });
     });
 })

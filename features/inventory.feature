@@ -306,3 +306,45 @@ Scenario: Update restock_level and restock_amount via inline edit
     Then I should see the message "Success"
     And I should see "35" in the results
     And I should see "45" in the results
+
+Scenario: Successful decrement
+    When I visit the "Home Page"
+    And I set the "Product Id" to "PROD001"
+    And I press the "Search" button
+    Then I should see "100" in the results
+    When I click the "Decrement" button in the results table
+    And I enter "10" in the "amount" field
+    And I click the "Confirm" button in the results table
+    Then I should see the message "Success"
+    And I should see "90" in the results
+
+Scenario: Invalid amount - negative number
+    When I visit the "Home Page"
+    And I set the "Product Id" to "PROD001"
+    And I press the "Search" button
+    When I click the "Decrement" button in the results table
+    And I enter "-5" in the "amount" field
+    And I click the "Confirm" button in the results table
+    Then I should not see "Success"
+    And I should see an input error message for the "amount" field
+
+Scenario: Insufficient inventory
+    When I visit the "Home Page"
+    And I set the "Product Id" to "PROD003"
+    And I press the "Search" button
+    Then I should see "5" in the results
+    When I click the "Decrement" button in the results table
+    And I enter "20" in the "amount" field
+    And I click the "Confirm" button in the results table
+    Then I should see an error message indicating insufficient inventory
+    And I should see "5" in the results
+
+Scenario: Cancel decrement
+    When I visit the "Home Page"
+    And I set the "Product Id" to "PROD001"
+    And I press the "Search" button
+    Then I should see "100" in the results
+    When I click the "Decrement" button in the results table
+    And I enter "10" in the "amount" field
+    And I click the "Cancel" button in the results table
+    Then I should see "100" in the results
