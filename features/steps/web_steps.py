@@ -55,6 +55,25 @@ def step_impl(context: Any) -> None:
     context.driver.get(context.base_url)
     # Uncomment next line to take a screenshot of the web page
     # save_screenshot(context, 'Home Page')
+    if getattr(context, "inject_server_error", False):
+        context.driver.execute_script("""
+            (function() {
+                var origAjax = $.ajax;
+                $.ajax = function(settings) {
+                    if (settings.type === 'GET' && settings.url &&
+                            settings.url.indexOf('/inventory') !== -1) {
+                        $.ajax = origAjax;
+                        var d = $.Deferred();
+                        setTimeout(function() {
+                            d.reject({responseJSON: {message: "Internal Server Error"}});
+                        }, 0);
+                        return d.promise();
+                    }
+                    return origAjax.apply(this, arguments);
+                };
+            })();
+        """)
+        context.inject_server_error = False
 
 
 @then('I should see "{message}" in the title')
@@ -271,3 +290,93 @@ def step_impl(context: Any, field_name: str) -> None:
         )
     )
     assert error_div.text != ""
+
+
+##################################################################
+# Steps for filter panel (UI - Filter Inventory Items #41)
+##################################################################
+
+
+@when('I select "{text}" from the "{element_name}" filter dropdown')
+def step_impl(context: Any, text: str, element_name: str) -> None:
+    element_id = "filter_" + element_name.lower().replace(" ", "_")
+    element = Select(context.driver.find_element(By.ID, element_id))
+    element.select_by_value(text)
+
+
+@when('I enter "{text_string}" in the "{field_name}" filter field')
+def step_impl(context: Any, text_string: str, field_name: str) -> None:
+    field_id = "filter_" + field_name.lower().replace(" ", "_")
+    element = context.driver.find_element(By.ID, field_id)
+    element.clear()
+    element.send_keys(text_string)
+
+
+@then('I should see "{name}" in the result')
+def step_impl(context: Any, name: str) -> None:
+    found = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.text_to_be_present_in_element(
+            (By.ID, "search_results"), name
+        )
+    )
+    assert found
+
+
+@then('I should not see "{name}" in the result')
+def step_impl(context: Any, name: str) -> None:
+    element = context.driver.find_element(By.ID, "search_results")
+    assert name not in element.text
+
+
+@then("I should see an empty state message")
+def step_impl(context: Any) -> None:
+    found = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.text_to_be_present_in_element(
+            (By.ID, "search_results"), "No items found"
+        )
+    )
+    assert found
+
+
+@then("the result shows nothing")
+def step_impl(context: Any) -> None:
+    # Disable implicit wait so find_elements returns immediately when empty
+    context.driver.implicitly_wait(0)
+    try:
+        element = context.driver.find_element(By.ID, "search_results")
+        rows = element.find_elements(By.CSS_SELECTOR, "tbody tr")
+        assert len(rows) == 0
+    finally:
+        context.driver.implicitly_wait(context.wait_seconds)
+
+
+@then("I should see an error message from the server response")
+def step_impl(context: Any) -> None:
+    flash = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.presence_of_element_located((By.ID, "flash_message"))
+    )
+    assert flash.text.strip() != "" and flash.text.strip() != "Success"
+
+
+@then('I should see an input error message for the "{field_name}" field')
+def step_impl(context: Any, field_name: str) -> None:
+    field_id = "err_filter_" + field_name.lower().replace(" ", "_")
+    error_div = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.presence_of_element_located((By.ID, field_id))
+    )
+    assert error_div.text.strip() != ""
+
+
+@then('I should see an input error message indicating "{message}"')
+def step_impl(context: Any, message: str) -> None:
+    error_divs = context.driver.find_elements(By.CLASS_NAME, "filter-error")
+    error_texts = [div.text for div in error_divs if div.text.strip()]
+    assert any(message.lower() in text.lower() for text in error_texts), (
+        f"Expected error containing '{message}', found: {error_texts}"
+    )
+
+
+@then("no API call should be made")
+def step_impl(context: Any) -> None:
+    flash = context.driver.find_element(By.ID, "flash_message")
+    assert flash.text.strip() == ""

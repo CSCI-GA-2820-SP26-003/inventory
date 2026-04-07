@@ -148,7 +148,7 @@ Scenario: Query by Product Id
 
 Scenario: Query by Condition
     When I visit the "Home Page"
-    And I select "Used" in the "Condition" dropdown
+    And I select "USED" from the "condition" filter dropdown
     And I press the "Search" button
     Then I should see the message "Success"
     And I should see "PROD003" in the results
@@ -157,7 +157,7 @@ Scenario: Query by Condition
 Scenario: Query by both Product Id and Condition
     When I visit the "Home Page"
     And I set the "Product Id" to "PROD001"
-    And I select "New" in the "Condition" dropdown
+    And I select "NEW" from the "condition" filter dropdown
     And I press the "Search" button
     Then I should see the message "Success"
     And I should see "PROD001" in the results
@@ -219,7 +219,7 @@ Scenario: Update an Inventory Item that does not exist
 Scenario: Update an Inventory Item condition via inline edit
     When I visit the "Home Page"
     And I set the "Product Id" to "PROD002"
-    And I select "Open Box" in the "Condition" dropdown
+    And I select "OPEN_BOX" from the "condition" filter dropdown
     And I press the "Search" button
     Then I should see the message "Success"
     And I should see "PROD002" in the results
@@ -242,3 +242,110 @@ Scenario: Update restock_level and restock_amount via inline edit
     Then I should see the message "Success"
     And I should see "35" in the results
     And I should see "45" in the results
+
+# UI - Filter Inventory Items (#41)
+
+Scenario: filter by condition
+    Given the following inventory items exist
+        | product_id | quantity | condition | restock_level | restock_amount |
+        | product1   | 100      | NEW       | 0             | 0              |
+        | product2   | 50       | USED      | 0             | 0              |
+        | product3   | 30       | NEW       | 0             | 0              |
+    When I visit the "Home Page"
+    And I select "NEW" from the "condition" filter dropdown
+    And I press the "Search" button
+    Then I should see "product1" in the result
+    And I should see "product3" in the result
+    And I should not see "product2" in the result
+
+Scenario: filter by quantity range
+    Given the following inventory items exist
+        | product_id | quantity | condition | restock_level | restock_amount |
+        | product1   | 100      | NEW       | 0             | 0              |
+        | product2   | 50       | USED      | 0             | 0              |
+        | product3   | 10       | NEW       | 0             | 0              |
+    When I visit the "Home Page"
+    And I enter "20" in the "quantity min" filter field
+    And I enter "80" in the "quantity max" filter field
+    And I press the "Search" button
+    Then I should see "product2" in the result
+    And I should not see "product1" in the result
+    And I should not see "product3" in the result
+
+Scenario: filter by restock_level range
+    Given the following inventory items exist
+        | product_id | quantity | condition | restock_level | restock_amount |
+        | product1   | 0        | NEW       | 10            | 0              |
+        | product2   | 0        | USED      | 30            | 0              |
+        | product3   | 0        | NEW       | 50            | 0              |
+    When I visit the "Home Page"
+    And I enter "20" in the "restock_level min" filter field
+    And I enter "40" in the "restock_level max" filter field
+    And I press the "Search" button
+    Then I should see "product2" in the result
+    And I should not see "product1" in the result
+    And I should not see "product3" in the result
+
+Scenario: filter by restock_amount range
+    Given the following inventory items exist
+        | product_id | quantity | condition | restock_level | restock_amount |
+        | product1   | 0        | NEW       | 0             | 100            |
+        | product2   | 0        | USED      | 0             | 200            |
+        | product3   | 0        | NEW       | 0             | 300            |
+    When I visit the "Home Page"
+    And I enter "150" in the "restock_amount min" filter field
+    And I enter "250" in the "restock_amount max" filter field
+    And I press the "Search" button
+    Then I should see "product2" in the result
+    And I should not see "product1" in the result
+    And I should not see "product3" in the result
+
+Scenario: filter with multiple fields combined
+    Given the following inventory items exist
+        | product_id | quantity | condition | restock_level | restock_amount |
+        | product1   | 100      | NEW       | 0             | 0              |
+        | product2   | 100      | USED      | 0             | 0              |
+        | product3   | 50       | NEW       | 0             | 0              |
+    When I visit the "Home Page"
+    And I select "NEW" from the "condition" filter dropdown
+    And I enter "80" in the "quantity min" filter field
+    And I press the "Search" button
+    Then I should see "product1" in the result
+    And I should not see "product2" in the result
+    And I should not see "product3" in the result
+
+Scenario: no items match the filter
+    Given the following inventory items exist
+        | product_id | quantity | condition | restock_level | restock_amount |
+        | product1   | 100      | NEW       | 0             | 0              |
+    When I visit the "Home Page"
+    And I select "OPEN_BOX" from the "condition" filter dropdown
+    And I press the "Search" button
+    Then I should see an empty state message
+    And the result shows nothing
+
+Scenario: API error
+    Given the following inventory items exist
+        | product_id | quantity | condition | restock_level | restock_amount |
+        | product1   | 100      | NEW       | 0             | 0              |
+    And the server returns an error on "GET /inventory"
+    When I visit the "Home Page"
+    And I select "NEW" from the "condition" filter dropdown
+    And I press the "Search" button
+    Then I should see an error message from the server response
+    And the result shows nothing
+
+Scenario: invalid numeric filter input
+    When I visit the "Home Page"
+    And I enter "-10" in the "quantity min" filter field
+    And I press the "Search" button
+    Then I should see an input error message for the "quantity min" field
+    And no API call should be made
+
+Scenario: min value greater than max value
+    When I visit the "Home Page"
+    And I enter "100" in the "quantity min" filter field
+    And I enter "50" in the "quantity max" filter field
+    And I press the "Search" button
+    Then I should see an input error message indicating "Min must not be greater than max"
+    And no API call should be made

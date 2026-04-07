@@ -34,29 +34,43 @@ HTTP_204_NO_CONTENT = 204
 WAIT_TIMEOUT = 60
 
 
-@given('the following inventory items')
-def step_impl(context):
-    """ Delete all Inventory Items and load new ones """
-
-    # Get a list all of the inventory items
+def _load_inventory_items(context):
+    """ Delete all Inventory Items and load new ones from context.table """
     rest_endpoint = f"{context.base_url}/inventory"
     context.resp = requests.get(rest_endpoint, timeout=WAIT_TIMEOUT)
     expect(context.resp.status_code).equal_to(HTTP_200_OK)
-    # and delete them one by one
     for item in context.resp.json():
         context.resp = requests.delete(
             f"{rest_endpoint}/{item['public_id']}", timeout=WAIT_TIMEOUT
         )
         expect(context.resp.status_code).equal_to(HTTP_204_NO_CONTENT)
 
-    # load the database with new inventory items
     for row in context.table:
         payload = {
             "product_id": row['product_id'],
             "condition": row['condition'],
-            "quantity": int(row['quantity']),
-            "restock_level": int(row['restock_level']),
-            "restock_amount": int(row['restock_amount'])
+            "quantity": int(row.get('quantity', 0)),
+            "restock_level": int(row.get('restock_level', 0)),
+            "restock_amount": int(row.get('restock_amount', 0)),
         }
         context.resp = requests.post(rest_endpoint, json=payload, timeout=WAIT_TIMEOUT)
         expect(context.resp.status_code).equal_to(HTTP_201_CREATED)
+
+
+@given('the following inventory items')
+def step_impl(context):
+    """ Delete all Inventory Items and load new ones """
+    _load_inventory_items(context)
+
+
+@given('the following inventory items exist')
+def step_impl(context):
+    """ Delete all Inventory Items and load new ones (alias) """
+    _load_inventory_items(context)
+
+
+@given('the server returns an error on "GET /inventory"')
+def step_impl(context):
+    """Inject a JS mock so the next GET /inventory call returns a server error"""
+    # Store flag; actual injection happens after page load in the When step
+    context.inject_server_error = True

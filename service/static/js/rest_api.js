@@ -21,6 +21,15 @@ $(function () {
         $("#item_quantity").val("");
         $("#item_restock_level").val("");
         $("#item_restock_amount").val("");
+        // Clear filter range fields and errors
+        $("#filter_condition").val("");
+        $("#filter_quantity_min").val("");
+        $("#filter_quantity_max").val("");
+        $("#filter_restock_level_min").val("");
+        $("#filter_restock_level_max").val("");
+        $("#filter_restock_amount_min").val("");
+        $("#filter_restock_amount_max").val("");
+        $(".filter-error").text("");
     }
 
     // Updates the flash message area
@@ -143,20 +152,62 @@ $(function () {
     $("#search-btn").click(function () {
 
         let product_id = $("#item_product_id").val();
-        let condition = $("#item_condition").val();
+        let condition = $("#filter_condition").val();
 
-        let queryString = ""
+        let qty_min_str = $("#filter_quantity_min").val();
+        let qty_max_str = $("#filter_quantity_max").val();
+        let rl_min_str = $("#filter_restock_level_min").val();
+        let rl_max_str = $("#filter_restock_level_max").val();
+        let ra_min_str = $("#filter_restock_amount_min").val();
+        let ra_max_str = $("#filter_restock_amount_max").val();
 
-        if (product_id) {
-            queryString += 'product_id=' + product_id
-        }
-        if (condition) {
-            if (queryString.length > 0) {
-                queryString += '&condition=' + condition
-            } else {
-                queryString += 'condition=' + condition
+        // Clear previous filter errors
+        $(".filter-error").text("");
+
+        // Validate and parse filter range inputs
+        let valid = true;
+
+        function validateRangeField(minStr, maxStr, minErrId, maxErrId) {
+            let minVal = minStr !== "" ? parseInt(minStr, 10) : null;
+            let maxVal = maxStr !== "" ? parseInt(maxStr, 10) : null;
+
+            if (minStr !== "" && (isNaN(minVal) || minVal < 0 || String(minVal) !== minStr.trim())) {
+                $(minErrId).text("Must be a non-negative integer");
+                valid = false;
+                minVal = null;
             }
+            if (maxStr !== "" && (isNaN(maxVal) || maxVal < 0 || String(maxVal) !== maxStr.trim())) {
+                $(maxErrId).text("Must be a non-negative integer");
+                valid = false;
+                maxVal = null;
+            }
+            if (minVal !== null && maxVal !== null && minVal > maxVal) {
+                $(minErrId).text("Min must not be greater than max");
+                valid = false;
+            }
+            return { minVal, maxVal };
         }
+
+        let qty = validateRangeField(qty_min_str, qty_max_str,
+            "#err_filter_quantity_min", "#err_filter_quantity_max");
+        let rl = validateRangeField(rl_min_str, rl_max_str,
+            "#err_filter_restock_level_min", "#err_filter_restock_level_max");
+        let ra = validateRangeField(ra_min_str, ra_max_str,
+            "#err_filter_restock_amount_min", "#err_filter_restock_amount_max");
+
+        if (!valid) return;
+
+        let queryParts = [];
+        if (product_id) queryParts.push('product_id=' + product_id);
+        if (condition) queryParts.push('condition=' + condition);
+        if (qty.minVal !== null) queryParts.push('quantity_min=' + qty.minVal);
+        if (qty.maxVal !== null) queryParts.push('quantity_max=' + qty.maxVal);
+        if (rl.minVal !== null) queryParts.push('restock_level_min=' + rl.minVal);
+        if (rl.maxVal !== null) queryParts.push('restock_level_max=' + rl.maxVal);
+        if (ra.minVal !== null) queryParts.push('restock_amount_min=' + ra.minVal);
+        if (ra.maxVal !== null) queryParts.push('restock_amount_max=' + ra.maxVal);
+
+        let queryString = queryParts.join('&');
 
         $("#flash_message").empty();
 

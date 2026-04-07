@@ -107,6 +107,27 @@ def list_inventory_items():
             )
             query = query.filter(InventoryItem.quantity <= InventoryItem.restock_level)
 
+    # Numeric range filters
+    quantity_min = request.args.get("quantity_min", type=int)
+    quantity_max = request.args.get("quantity_max", type=int)
+    restock_level_min = request.args.get("restock_level_min", type=int)
+    restock_level_max = request.args.get("restock_level_max", type=int)
+    restock_amount_min = request.args.get("restock_amount_min", type=int)
+    restock_amount_max = request.args.get("restock_amount_max", type=int)
+
+    if quantity_min is not None:
+        query = query.filter(InventoryItem.quantity >= quantity_min)
+    if quantity_max is not None:
+        query = query.filter(InventoryItem.quantity <= quantity_max)
+    if restock_level_min is not None:
+        query = query.filter(InventoryItem.restock_level >= restock_level_min)
+    if restock_level_max is not None:
+        query = query.filter(InventoryItem.restock_level <= restock_level_max)
+    if restock_amount_min is not None:
+        query = query.filter(InventoryItem.restock_amount >= restock_amount_min)
+    if restock_amount_max is not None:
+        query = query.filter(InventoryItem.restock_amount <= restock_amount_max)
+
     items = query.all()
 
     results = [item.serialize() for item in items]
