@@ -36,7 +36,7 @@ $(function () {
     $("#create-btn").click(function () {
 
         let product_id = $("#item_product_id").val();
-        let condition = $("#item_condition").val();
+        let condition = $("#item_condition").val() || "NEW";
         let quantity = parseInt($("#item_quantity").val());
         let restock_level = parseInt($("#item_restock_level").val());
         let restock_amount = parseInt($("#item_restock_amount").val());
@@ -133,6 +133,15 @@ $(function () {
     $("#clear-btn").click(function () {
         $("#item_id").val("");
         $("#flash_message").empty();
+        $("#filter_quantity_min").val("");
+        $("#filter_quantity_max").val("");
+        $("#filter_restock_level_min").val("");
+        $("#filter_restock_level_max").val("");
+        $("#filter_restock_amount_min").val("");
+        $("#filter_restock_amount_max").val("");
+        $("#err_quantity").text("");
+        $("#err_restock_level").text("");
+        $("#err_restock_amount").text("");
         clear_form_data()
     });
 
@@ -140,7 +149,48 @@ $(function () {
     // Search for Inventory Items in results table
     // ****************************************
 
+    function validateRangeFilter(minVal, maxVal, errorId) {
+        let min = minVal.trim();
+        let max = maxVal.trim();
+        let minNum = min === "" ? NaN : Number(min);
+        let maxNum = max === "" ? NaN : Number(max);
+
+        if (min !== "" && (minNum < 0 || !Number.isInteger(minNum))) {
+            $(errorId).text("Min must be a non-negative integer");
+            return false;
+        }
+        if (max !== "" && (maxNum < 0 || !Number.isInteger(maxNum))) {
+            $(errorId).text("Max must be a non-negative integer");
+            return false;
+        }
+        if (min !== "" && max !== "" && minNum > maxNum) {
+            $(errorId).text("Min must not be greater than max");
+            return false;
+        }
+        $(errorId).text("");
+        return true;
+    }
+
     $("#search-btn").click(function () {
+
+        // Clear previous filter errors
+        $("#err_quantity").text("");
+        $("#err_restock_level").text("");
+        $("#err_restock_amount").text("");
+
+        // Validate numeric range filters
+        let qMinVal = $("#filter_quantity_min").val();
+        let qMaxVal = $("#filter_quantity_max").val();
+        let rlMinVal = $("#filter_restock_level_min").val();
+        let rlMaxVal = $("#filter_restock_level_max").val();
+        let raMinVal = $("#filter_restock_amount_min").val();
+        let raMaxVal = $("#filter_restock_amount_max").val();
+
+        let valid = true;
+        if (!validateRangeFilter(qMinVal, qMaxVal, "#err_quantity")) valid = false;
+        if (!validateRangeFilter(rlMinVal, rlMaxVal, "#err_restock_level")) valid = false;
+        if (!validateRangeFilter(raMinVal, raMaxVal, "#err_restock_amount")) valid = false;
+        if (!valid) return;
 
         let product_id = $("#item_product_id").val();
         let condition = $("#item_condition").val();
@@ -169,6 +219,24 @@ $(function () {
 
         ajax.done(function(res){
             //alert(res.toSource())
+            // Client-side filter by numeric ranges
+            let qMin = qMinVal.trim() === "" ? NaN : Number(qMinVal);
+            let qMax = qMaxVal.trim() === "" ? NaN : Number(qMaxVal);
+            let rlMin = rlMinVal.trim() === "" ? NaN : Number(rlMinVal);
+            let rlMax = rlMaxVal.trim() === "" ? NaN : Number(rlMaxVal);
+            let raMin = raMinVal.trim() === "" ? NaN : Number(raMinVal);
+            let raMax = raMaxVal.trim() === "" ? NaN : Number(raMaxVal);
+
+            res = res.filter(function(item) {
+                if (!isNaN(qMin) && item.quantity < qMin) return false;
+                if (!isNaN(qMax) && item.quantity > qMax) return false;
+                if (!isNaN(rlMin) && item.restock_level < rlMin) return false;
+                if (!isNaN(rlMax) && item.restock_level > rlMax) return false;
+                if (!isNaN(raMin) && item.restock_amount < raMin) return false;
+                if (!isNaN(raMax) && item.restock_amount > raMax) return false;
+                return true;
+            });
+
             $("#search_results").empty();
             let table = '<table class="table table-striped" cellpadding="10">'
             table += '<thead><tr>'
