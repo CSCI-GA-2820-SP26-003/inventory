@@ -202,3 +202,94 @@ def step_impl(context):
     # If using the update above, an empty search shows "No items found" or empty table
     # We verify that no data rows exist (length <= 1 if header exists, or look for specific empty text)
     assert len(rows) <= 1 or "No items found" not in element.text
+
+
+##################################################################
+# Steps for inline editing in the search results table
+##################################################################
+
+
+@when('I click the "Edit" button in the results table')
+def step_impl(context: Any) -> None:
+    button = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.element_to_be_clickable(
+            (By.CSS_SELECTOR, "#search_results .edit-row-btn")
+        )
+    )
+    button.click()
+
+
+@when('I set the row "{field_name}" field to "{text_string}"')
+def step_impl(context: Any, field_name: str, text_string: str) -> None:
+    field_id = field_name.lower().replace(" ", "_")
+    element = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.presence_of_element_located(
+            (By.CSS_SELECTOR, f'#search_results [data-field="{field_id}"]')
+        )
+    )
+    element.clear()
+    element.send_keys(text_string)
+
+
+@when('I select "{text}" in the row "{field_name}" dropdown')
+def step_impl(context: Any, text: str, field_name: str) -> None:
+    field_id = field_name.lower().replace(" ", "_")
+    element = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.presence_of_element_located(
+            (By.CSS_SELECTOR, f'#search_results [data-field="{field_id}"]')
+        )
+    )
+    Select(element).select_by_visible_text(text)
+
+
+@when('I press the "Save" button in the results table')
+def step_impl(context: Any) -> None:
+    button = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.element_to_be_clickable(
+            (By.CSS_SELECTOR, "#search_results .save-row-btn")
+        )
+    )
+    button.click()
+
+
+@when('I press the "Cancel" button in the results table')
+def step_impl(context: Any) -> None:
+    button = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.element_to_be_clickable(
+            (By.CSS_SELECTOR, "#search_results .cancel-row-btn")
+        )
+    )
+    button.click()
+
+
+@then('I should see an error for the row "{field_name}" field')
+def step_impl(context: Any, field_name: str) -> None:
+    field_id = field_name.lower().replace(" ", "_")
+    error_div = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.presence_of_element_located(
+            (By.CSS_SELECTOR, f"#search_results .err-{field_id}")
+        )
+    )
+    assert error_div.text != ""
+
+
+##################################################################
+# Steps for numeric range filter inputs
+##################################################################
+
+
+@when('I enter "{value}" in the "{field}" filter field')
+def step_impl(context: Any, value: str, field: str) -> None:
+    field_id = "filter_" + field.lower().replace(" ", "_")
+    element = context.driver.find_element(By.ID, field_id)
+    element.clear()
+    element.send_keys(value)
+
+
+@then('I should see a filter error for the "{field}" field')
+def step_impl(context: Any, field: str) -> None:
+    field_id = "err_" + field.lower().replace(" ", "_")
+    error_span = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.presence_of_element_located((By.ID, field_id))
+    )
+    assert error_span.text != ""
