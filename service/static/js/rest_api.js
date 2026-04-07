@@ -200,12 +200,6 @@ $(function () {
         let queryParts = [];
         if (product_id) queryParts.push('product_id=' + product_id);
         if (condition) queryParts.push('condition=' + condition);
-        if (qty.minVal !== null) queryParts.push('quantity_min=' + qty.minVal);
-        if (qty.maxVal !== null) queryParts.push('quantity_max=' + qty.maxVal);
-        if (rl.minVal !== null) queryParts.push('restock_level_min=' + rl.minVal);
-        if (rl.maxVal !== null) queryParts.push('restock_level_max=' + rl.maxVal);
-        if (ra.minVal !== null) queryParts.push('restock_amount_min=' + ra.minVal);
-        if (ra.maxVal !== null) queryParts.push('restock_amount_max=' + ra.maxVal);
 
         let queryString = queryParts.join('&');
 
@@ -219,7 +213,17 @@ $(function () {
         })
 
         ajax.done(function(res){
-            //alert(res.toSource())
+            // Apply numeric range filters client-side
+            res = res.filter(function(item) {
+                if (qty.minVal !== null && item.quantity < qty.minVal) return false;
+                if (qty.maxVal !== null && item.quantity > qty.maxVal) return false;
+                if (rl.minVal !== null && item.restock_level < rl.minVal) return false;
+                if (rl.maxVal !== null && item.restock_level > rl.maxVal) return false;
+                if (ra.minVal !== null && item.restock_amount < ra.minVal) return false;
+                if (ra.maxVal !== null && item.restock_amount > ra.maxVal) return false;
+                return true;
+            });
+
             $("#search_results").empty();
             let table = '<table class="table table-striped" cellpadding="10">'
             table += '<thead><tr>'
