@@ -722,3 +722,28 @@ class TestInventoryService(TestCase):
             f"{BASE_URL}/non-existent-id/decrement", json=payload
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    # ----------------------------------------------------------
+    # TEST RESTOCK
+    # ----------------------------------------------------------
+    def test_restock_inventory_success(self):
+        """It should successfully restock an inventory item"""
+        test_item = InventoryItemFactory(quantity=5, restock_level=10, restock_amount=40)
+        test_item.create()
+
+        response = self.client.post(
+            f"{BASE_URL}/{test_item.public_id}/restock",
+            content_type="application/json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        new_data = response.get_json()
+        self.assertEqual(new_data["quantity"], 45)
+
+    def test_restock_item_not_found(self):
+        """It should return 404 when restocking a non-existent item"""
+        response = self.client.post(
+            f"{BASE_URL}/non-existent-id/restock",
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

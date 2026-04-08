@@ -412,6 +412,33 @@ $(function () {
   });
 
   // ****************************************
+  // Restock an Inventory Item
+  // ****************************************
+
+    $("#restock-btn").click(function () {
+
+        let item_id = $("#item_id").val();
+
+        $("#flash_message").empty();
+
+        let ajax = $.ajax({
+            type: "POST",
+            url: `/inventory/${item_id}/restock`,
+            contentType: "application/json",
+            data: '{}'
+        })
+
+        ajax.done(function(res){
+            update_form_data(res)
+            flash_message("Success")
+        });
+
+        ajax.fail(function(res){
+            flash_message(res.responseJSON.message)
+        });
+    });
+
+  // ****************************************
   // List all Inventory Items
   // ****************************************
   $("#list_all-btn").click(function () {
