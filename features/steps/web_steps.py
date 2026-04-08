@@ -293,3 +293,64 @@ def step_impl(context: Any, field: str) -> None:
         expected_conditions.presence_of_element_located((By.ID, field_id))
     )
     assert error_span.text != ""
+
+
+@when('I click the "Decrement" button in the results table')
+def step_impl(context):
+    button = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.element_to_be_clickable(
+            (By.CSS_SELECTOR, ".decrement-row-btn")
+        )
+    )
+    button.click()
+
+
+@when('I enter "{value}" in the "amount" field')
+def step_impl(context, value):
+    element = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.presence_of_element_located((By.ID, "decrement_amount"))
+    )
+    element.clear()
+    element.send_keys(value)
+
+
+@when('I click the "Confirm" button in the results table')
+def step_impl(context):
+    button = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.element_to_be_clickable(
+            (By.CSS_SELECTOR, ".confirm-decrement-btn")
+        )
+    )
+    button.click()
+
+
+@when('I click the "Cancel" button in the results table')
+def step_impl(context):
+    button = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.element_to_be_clickable(
+            (By.CSS_SELECTOR, ".cancel-decrement-btn")
+        )
+    )
+    button.click()
+
+
+@then('I should see an input error message for the "{field}" field')
+def step_impl(context, field):
+    element = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.presence_of_element_located(
+            (By.CSS_SELECTOR, ".err-decrement")
+        )
+    )
+    assert element.text != ""
+
+
+@then("I should see an error message indicating insufficient inventory")
+def step_impl(context):
+    found = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.presence_of_element_located((By.ID, "flash_message"))
+    )
+    text = found.text.lower()
+    assert any(
+        word in text
+        for word in ["insufficient", "not enough", "lower than", "less than"]
+    )
