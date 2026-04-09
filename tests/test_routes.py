@@ -35,7 +35,7 @@ DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
 )
 
-BASE_URL = "/inventory"
+BASE_URL = "/api/inventory"
 
 
 ######################################################################
@@ -217,7 +217,7 @@ class TestInventoryService(TestCase):
 
     def test_method_not_allowed(self):
         """It should not allow unsupported HTTP methods"""
-        response = self.client.put("/inventory")
+        response = self.client.put("/api/inventory")
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def test_method_not_allowed_on_items(self):
