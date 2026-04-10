@@ -54,7 +54,10 @@ jobs:
         env:
           DATABASE_URI: "postgresql+psycopg://postgres:postgres@postgres:5432/postgres"
 
+  bdd-tests:
+    uses: ./github/workflows/bdd_tests.yml
 
+  code-cov:
 # CODECOV ACTIONS
       - name: Install packages for Codecov to work
         run: apt-get update && apt-get install -y git curl gpg
