@@ -14,18 +14,20 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: python:3.12-slim
+    container: quay.io/rofrano/pipeline-selenium:sp26
 
     # Required services
     services:
       postgres:
         image: postgres:15-alpine
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: pgs3cr3t
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        # Set health checks to wait until postgres has started
         options: >-
-          --health-cmd "pg_isready -U postgres"
+          --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -39,6 +41,18 @@ jobs:
         run: |
           python -m pip install -U pip pipenv
           pipenv install --system --dev
+
+      - name: Run the service locally
+        run: |
+          echo "\n*** STARTING APPLICATION ***\n"
+          gunicorn --log-level=info --bind=0.0.0.0:8080 wsgi:app &
+          echo "Waiting for service to stabilize..."
+          sleep 5
+          echo "Checking service /health..."
+          curl -i http://localhost:8080/health
+          echo "\n*** SERVER IS RUNNING ***"
+        env:
+          DATABASE_URI: "postgresql+psycopg://postgres:pgs3cr3t@postgres:5432/testdb"
 
       - name: Linting
         run: |
@@ -54,11 +68,11 @@ jobs:
         env:
           DATABASE_URI: "postgresql+psycopg://postgres:postgres@postgres:5432/postgres"
 
-  bdd-tests:
-    uses: ./github/workflows/bdd_tests.yml
+      - name: Run Integration Tests
+        run: behave
+        env:
+          DRIVER: "chrome"
 
-  code-cov:
-# CODECOV ACTIONS
       - name: Install packages for Codecov to work
         run: apt-get update && apt-get install -y git curl gpg
 
