@@ -3,9 +3,13 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+    - 'README.md'
   pull_request:
     branches:
       - master
+    paths-ignore:
+    - 'README.md'
 
 permissions:
   contents: read
@@ -66,7 +70,7 @@ jobs:
       - name: Run unit tests with PyTest
         run: pytest --pspec --cov=service --cov-fail-under=95 --cov-report=xml
         env:
-          DATABASE_URI: "postgresql+psycopg://postgres:postgres@postgres:5432/postgres"
+          DATABASE_URI: "postgresql+psycopg://postgres:pgs3cr3t@postgres:5432/testdb"
 
       - name: Run Integration Tests
         run: behave
