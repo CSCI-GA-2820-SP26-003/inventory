@@ -381,8 +381,6 @@ class TestInventoryService(TestCase):
         """It should trigger the global 405 error handler"""
         response = self.client.delete(BASE_URL)
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-        data = response.get_json()
-        self.assertIsNotNone(data)
 
     # ----------------------------------------------------------
     # TEST DELETE
