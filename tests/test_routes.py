@@ -715,6 +715,17 @@ class TestInventoryService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.get_json()["message"], "INSUFFICIENT INVENTORY")
 
+    def test_decrement_missing_amount(self):
+        """It should return 400 when amount is missing from request body"""
+        test_item = InventoryItemFactory(quantity=10)
+        test_item.create()
+
+        response = self.client.post(
+            f"{BASE_URL}/{test_item.public_id}/decrement",
+            json={"orderId": "order_123"},
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_decrement_item_not_found(self):
         """It should return 404 when decrementing a non-existent item"""
         payload = {"amount": 2, "orderId": "order_123"}
