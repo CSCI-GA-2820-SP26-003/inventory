@@ -1,0 +1,47 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: inventory-cd-pipeline
+spec:
+  params:
+    - name: GIT_REPO
+      type: string
+      description: URL of the git REPO
+      default: https://github.com/CSCI-GA-2820-SP26-003/inventory
+    - name: GIT_REF
+      type: string
+      description: Target branch or sha of repo
+      default: master
+  workspaces:
+    - name: pipeline-workspace
+  tasks:
+    - name: git-clone
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: git-clone
+          - name: namespace
+            value: openshift-pipelines
+      workspaces:
+        - name: output
+          workspace: pipeline-workspace
+      params:
+        - name: URL
+          value: $(params.GIT_REPO)
+        - name: REVISION
+          value: $(params.GIT_REF)
+        - name: DEPTH
+          value: "1"
+        - name: SSL_VERIFY
+          value: "true"
+        - name: SUBMODULES
+          value: "true"
+        - name: DELETE_EXISTING
+          value: "true"
+        - name: VERBOSE
+          value: "false"
+        - name: USER_HOME
+          value: /home/git
