@@ -45,3 +45,38 @@ spec:
           value: "false"
         - name: USER_HOME
           value: /home/git
+
+    - name: lint
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: pylint
+          - name: namespace
+            value: openshift-pipelines
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      params:
+        - name: path
+          value: service
+      runAfter:
+        - git-clone
+
+    - name: test
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: pytest-env
+          - name: namespace
+            value: openshift-pipelines
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      runAfter:
+        - git-clone
