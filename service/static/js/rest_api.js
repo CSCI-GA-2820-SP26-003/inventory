@@ -53,7 +53,7 @@ $(function () {
 
         let ajax = $.ajax({
             type: "POST",
-            url: "/inventory",
+            url: "/api/inventory",
             contentType: "application/json",
             data: JSON.stringify(data),
         });
@@ -81,7 +81,7 @@ $(function () {
 
         let ajax = $.ajax({
             type: "GET",
-            url: `/inventory/${item_id}`,
+            url: `/api/inventory/${item_id}`,
             contentType: "application/json",
             data: ''
         })
@@ -111,7 +111,7 @@ $(function () {
 
         let ajax = $.ajax({
             type: "DELETE",
-            url: `/inventory/${item_id}`,
+            url: `/api/inventory/${item_id}`,
             contentType: "application/json",
             data: '',
         })
@@ -212,7 +212,7 @@ $(function () {
 
         let ajax = $.ajax({
             type: "GET",
-            url: `/inventory?${queryString}`,
+            url: `/api/inventory?${queryString}`,
             contentType: "application/json",
             data: ''
         })
@@ -391,7 +391,7 @@ $(function () {
 
       let ajax = $.ajax({
           type: "PUT",
-          url: `/inventory/${public_id}`,
+          url: `/api/inventory/${public_id}`,
           contentType: "application/json",
           data: JSON.stringify(data)
       });
@@ -423,7 +423,7 @@ $(function () {
 
         let ajax = $.ajax({
             type: "POST",
-            url: `/inventory/${item_id}/restock`,
+            url: `/api/inventory/${item_id}/restock`,
             contentType: "application/json",
             data: '{}'
         })
@@ -446,7 +446,7 @@ $(function () {
 
         let ajax = $.ajax({
             type: "GET",
-            url: "/inventory",
+            url: "/api/inventory",
             contentType: "application/json",
             data: ''
         });
@@ -522,7 +522,7 @@ $(function () {
         }
         $.ajax({
             type: "POST",
-            url: `/inventory/${public_id}/decrement`,
+            url: `/api/inventory/${public_id}/decrement`,
             contentType: "application/json",
             data: JSON.stringify({ "amount": amount })
         }).done(function (res) {

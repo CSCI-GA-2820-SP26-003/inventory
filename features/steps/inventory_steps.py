@@ -39,7 +39,7 @@ def step_impl(context):
     """ Delete all Inventory Items and load new ones """
 
     # Get a list all of the inventory items
-    rest_endpoint = f"{context.base_url}/inventory"
+    rest_endpoint = f"{context.base_url}/api/inventory"
     context.resp = requests.get(rest_endpoint, timeout=WAIT_TIMEOUT)
     expect(context.resp.status_code).equal_to(HTTP_200_OK)
     # and delete them one by one
