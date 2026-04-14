@@ -48,14 +48,7 @@ spec:
 
     - name: lint
       taskRef:
-        resolver: cluster
-        params:
-          - name: kind
-            value: task
-          - name: name
-            value: pylint
-          - name: namespace
-            value: openshift-pipelines
+        name: pylint
       workspaces:
         - name: source
           workspace: pipeline-workspace
@@ -67,14 +60,7 @@ spec:
 
     - name: test
       taskRef:
-        resolver: cluster
-        params:
-          - name: kind
-            value: task
-          - name: name
-            value: pytest-env
-          - name: namespace
-            value: openshift-pipelines
+        name: pytest-env
       workspaces:
         - name: source
           workspace: pipeline-workspace
