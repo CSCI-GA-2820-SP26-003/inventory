@@ -13,14 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ######################################################################
-
 """
 Error handlers
-
 Handles all of the HTTP Error Codes returning JSON messages
 """
-
-from flask import current_app as app  # Import Flask application
+from flask import current_app as app
 from werkzeug.exceptions import MethodNotAllowed
 from service.routes import api
 from service.models import DataValidationError
@@ -32,7 +29,7 @@ from . import status
 ######################################################################
 @app.errorhandler(DataValidationError)
 def request_validation_error(error):
-    """Handles Value Errors from bad data"""
+    """Handles DataValidationError from bad data - Flask-RESTX does not handle this automatically"""
     message = str(error)
     app.logger.warning(message)
     return {
