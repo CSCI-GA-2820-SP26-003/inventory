@@ -347,10 +347,8 @@ def step_impl(context, field):
 @then("I should see an error message indicating insufficient inventory")
 def step_impl(context):
     found = WebDriverWait(context.driver, context.wait_seconds).until(
-        expected_conditions.presence_of_element_located((By.ID, "flash_message"))
+        expected_conditions.text_to_be_present_in_element(
+            (By.ID, "flash_message"), "INSUFFICIENT"
+        )
     )
-    text = found.text.lower()
-    assert any(
-        word in text
-        for word in ["insufficient", "not enough", "lower than", "less than"]
-    )
+    assert found
