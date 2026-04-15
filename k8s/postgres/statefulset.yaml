@@ -30,6 +30,8 @@ spec:
                 secretKeyRef:
                   name: postgres-creds
                   key: password
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
           volumeMounts:
           - name: postgres-storage
             mountPath: /var/lib/postgresql/data
