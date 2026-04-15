@@ -33,7 +33,7 @@ POST /api/inventory/{id}/decrement - Decrements an Inventory Item quantity
 
 from flask import request
 from flask import current_app as app  # Import Flask application
-from flask_restx import Api, Resource, fields
+from flask_restx import Api, Resource, fields, reqparse
 from service.models import InventoryItem, Condition, DataValidationError
 from service.common import status  # HTTP Status Codes
 
@@ -120,6 +120,33 @@ inventory_model = api.inherit(
 )
 
 
+# query string arguments
+inventory_args = reqparse.RequestParser()
+inventory_args.add_argument(
+    "product_id", type=str, location="args", required=False,
+    help="List Inventory Items by product_id",
+)
+inventory_args.add_argument(
+    "condition", type=str, location="args", required=False,
+    help="List Inventory Items by condition (NEW, OPEN_BOX, USED)",
+)
+inventory_args.add_argument(
+    "restock", type=str, location="args", required=False,
+    help="Filter items needing restock (true/false)",
+)
+
+# decrement action payload
+decrement_model = api.model(
+    "DecrementModel",
+    {
+        "amount": fields.Integer(
+            required=True,
+            description="The amount to decrement from quantity",
+        ),
+    },
+)
+
+
 ######################################################################
 #  PATH: /inventory/{id}
 ######################################################################
@@ -139,6 +166,7 @@ class InventoryResource(Resource):
     # RETRIEVE AN INVENTORY ITEM
     # ------------------------------------------------------------------
     @api.doc("get_inventory_items")
+    @api.response(200, "Success")
     @api.response(404, "Inventory Item not found")
     @api.marshal_with(inventory_model)
     def get(self, public_id):
@@ -165,8 +193,10 @@ class InventoryResource(Resource):
     # UPDATE AN EXISTING INVENTORY ITEM
     # ------------------------------------------------------------------
     @api.doc("update_inventory_items")
-    @api.response(404, "Inventory Item not found")
+    @api.response(200, "Success")
     @api.response(400, "The posted Inventory Item data was not valid")
+    @api.response(404, "Inventory Item not found")
+    @api.response(415, "Unsupported media type")
     @api.expect(create_model)
     @api.marshal_with(inventory_model)
     def put(self, public_id):
@@ -280,6 +310,9 @@ class InventoryCollection(Resource):
     # LIST ALL INVENTORY ITEMS
     # ------------------------------------------------------------------
     @api.doc("list_inventory_items")
+    @api.response(200, "Success")
+    @api.response(400, "Invalid query parameter")
+    @api.expect(inventory_args, validate=True)
     @api.marshal_list_with(inventory_model)
     def get(self):
         """Returns all of the Inventory Items"""
@@ -334,7 +367,10 @@ class InventoryCollection(Resource):
     # ADD A NEW INVENTORY ITEM
     # ------------------------------------------------------------------
     @api.doc("create_inventory_items")
+    @api.response(201, "Inventory Item created")
     @api.response(400, "The posted data was not valid")
+    @api.response(409, "Duplicate inventory item already exists")
+    @api.response(415, "Unsupported media type")
     @api.expect(create_model)
     @api.marshal_with(inventory_model, code=201)
     def post(self):
@@ -406,6 +442,7 @@ class RestockResource(Resource):
     """Restock actions on an Inventory Item"""
 
     @api.doc("restock_inventory_item")
+    @api.response(200, "Success")
     @api.response(404, "Inventory Item not found")
     @api.marshal_with(inventory_model)
     def post(self, public_id):
@@ -448,8 +485,11 @@ class DecrementResource(Resource):
     """Decrement actions on an Inventory Item"""
 
     @api.doc("decrement_inventory_item")
-    @api.response(404, "Inventory Item not found")
+    @api.response(200, "Success")
     @api.response(400, "Invalid decrement request")
+    @api.response(404, "Inventory Item not found")
+    @api.response(415, "Unsupported media type")
+    @api.expect(decrement_model)
     @api.marshal_with(inventory_model)
     def post(self, public_id):
         """
