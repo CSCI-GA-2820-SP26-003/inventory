@@ -45,3 +45,24 @@ spec:
           value: "false"
         - name: USER_HOME
           value: /home/git
+
+    - name: lint
+      taskRef:
+        name: pylint
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      params:
+        - name: path
+          value: service
+      runAfter:
+        - git-clone
+
+    - name: test
+      taskRef:
+        name: pytest-env
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      runAfter:
+        - git-clone
