@@ -12,6 +12,10 @@ spec:
       type: string
       description: Target branch or sha of repo
       default: master
+    - name: APP_IMAGE
+      type: string
+      description: Image to build and push
+      default: cluster-registry:5000/inventory:1.0
   workspaces:
     - name: pipeline-workspace
   tasks:
@@ -66,3 +70,60 @@ spec:
           workspace: pipeline-workspace
       runAfter:
         - git-clone
+    
+    - name: buildah
+      params:
+        - name: IMAGE
+          value: $(params.APP_IMAGE)
+        - name: DOCKERFILE
+          value: ./Dockerfile
+        - name: BUILD_ARGS
+          value:
+            - ''
+        - name: CONTEXT
+          value: .
+        - name: STORAGE_DRIVER
+          value: vfs
+        - name: FORMAT
+          value: oci
+        - name: BUILD_EXTRA_ARGS
+          value: ''
+        - name: PUSH_EXTRA_ARGS
+          value: ''
+        - name: SKIP_PUSH
+          value: 'false'
+        - name: TLS_VERIFY
+          value: 'true'
+        - name: VERBOSE
+          value: 'false'
+      runAfter:
+        - test
+        - lint
+      taskRef:
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: buildah
+          - name: namespace
+            value: openshift-pipelines
+        resolver: cluster
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+    - name: deploy-image
+      params:
+        - name: image-name
+          value: $(params.APP_IMAGE)
+        - name: manifest-dir
+          value: k8s
+      runAfter:
+        - buildah
+      taskRef:
+        kind: Task
+        name: deploy-image
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+
+
