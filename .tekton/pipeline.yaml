@@ -12,10 +12,14 @@ spec:
       type: string
       description: Target branch or sha of repo
       default: master
+    - name: APP_NAME
+      type: string
+      description: Name of app 
+      default: inventory
     - name: APP_IMAGE
       type: string
       description: Image to build and push
-      default: cluster-registry:5000/inventory:1.0
+      default: image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/$(params.APP_NAME):latest
   workspaces:
     - name: pipeline-workspace
   tasks:
@@ -111,19 +115,6 @@ spec:
       workspaces:
         - name: source
           workspace: pipeline-workspace
-    - name: deploy-image
-      params:
-        - name: image-name
-          value: $(params.APP_IMAGE)
-        - name: manifest-dir
-          value: k8s
-      runAfter:
-        - buildah
-      taskRef:
-        kind: Task
-        name: deploy-image
-      workspaces:
-        - name: source
-          workspace: pipeline-workspace
+
 
 
