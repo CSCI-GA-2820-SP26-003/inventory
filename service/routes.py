@@ -21,7 +21,7 @@ Inventory Service with Swagger
 Paths:
 ------
 GET / - Displays a UI for Selenium testing
-GET /health - Returns the health status
+GET /api/health - Returns the health status
 GET /api/inventory - Returns a list all of the Inventory Items
 GET /api/inventory/{id} - Returns the Inventory Item with a given id
 POST /api/inventory - Creates a new Inventory Item record in the database
@@ -65,10 +65,21 @@ def index():
 ######################################################################
 # HEALTH CHECK
 ######################################################################
-@app.route("/health")
-def health_check():
-    """Health check endpoint for Kubernetes probes"""
-    return {"status": "OK"}, status.HTTP_200_OK
+health_ns = api.namespace("health", description="Health check operations")
+
+
+@health_ns.route("")
+class HealthCheck(Resource):
+    """Health check endpoint"""
+
+    @health_ns.doc("health_check")
+    @health_ns.response(200, "Service is healthy")
+    def get(self):
+        """Health check endpoint for Kubernetes probes
+
+        Returns 200 OK when the service is running.
+        """
+        return {"status": "OK"}, status.HTTP_200_OK
 
 
 # Define the model so that the docs reflect what can be sent
