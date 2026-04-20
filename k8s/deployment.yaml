@@ -40,7 +40,7 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 30
           httpGet:
-            path: /health
+            path: /api/health
             port: 8080
         resources:
           limits:

@@ -53,7 +53,7 @@ jobs:
           echo "Waiting for service to stabilize..."
           sleep 5
           echo "Checking service /health..."
-          curl -i http://localhost:8080/health
+          curl -i http://localhost:8080/api/health
           echo "\n*** SERVER IS RUNNING ***"
         env:
           DATABASE_URI: "postgresql+psycopg://postgres:pgs3cr3t@postgres:5432/testdb"
