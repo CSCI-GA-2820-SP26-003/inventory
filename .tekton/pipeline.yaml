@@ -116,5 +116,16 @@ spec:
         - name: source
           workspace: pipeline-workspace
 
-
-
+    - name: deploy
+      taskRef:
+        name: deploy
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      params:
+        - name: app-name
+          value: $(params.APP_NAME)
+        - name: app-image
+          value: $(params.APP_IMAGE)
+      runAfter:
+        - buildah
