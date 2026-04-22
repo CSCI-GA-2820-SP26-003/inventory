@@ -20,10 +20,6 @@ spec:
       type: string
       description: Image to build and push
       default: image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/$(params.APP_NAME):latest
-    - name: BASE_URL
-      type: string
-      description: Route URL of the deployed service for BDD tests
-      default: https://inventory-character-y-dev.apps.rm3.7wse.p1.openshiftapps.com
   workspaces:
     - name: pipeline-workspace
   tasks:
@@ -142,6 +138,6 @@ spec:
           workspace: pipeline-workspace
       params:
         - name: base-url
-          value: $(params.BASE_URL)
+          value: $(tasks.deploy.results.route-url)
       runAfter:
         - deploy
