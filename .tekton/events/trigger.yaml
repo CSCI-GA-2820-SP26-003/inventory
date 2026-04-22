@@ -1,0 +1,16 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: Trigger
+metadata:
+  name: cd-trigger
+spec:
+  serviceAccountName: pipeline
+  interceptors:
+    - ref:
+        name: cel
+      params:
+        - name: filter
+          value: "body.ref == 'refs/heads/master'"
+  bindings:
+    - ref: cd-binding
+  template:
+    ref: cd-template
