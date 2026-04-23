@@ -165,6 +165,9 @@ spec:
     - name: app-image
       description: Fully qualified image to deploy (registry/namespace/name:tag)
       type: string
+  results:
+    - name: route-url
+      description: The external URL of the deployed service route
   steps:
     - name: deploy
       image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
@@ -182,6 +185,11 @@ spec:
 
         echo "***** Waiting for rollout *****"
         kubectl rollout status deployment/$(params.app-name)
+
+        echo "***** Resolving route URL *****"
+        ROUTE_HOST=$(kubectl get route $(params.app-name) -o jsonpath='{.spec.host}')
+        echo -n "https://${ROUTE_HOST}" | tee $(results.route-url.path)
+        echo
 
 ---
 apiVersion: tekton.dev/v1beta1

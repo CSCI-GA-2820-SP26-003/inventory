@@ -129,3 +129,15 @@ spec:
           value: $(params.APP_IMAGE)
       runAfter:
         - buildah
+
+    - name: bdd
+      taskRef:
+        name: behave
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      params:
+        - name: base-url
+          value: $(tasks.deploy.results.route-url)
+      runAfter:
+        - deploy
