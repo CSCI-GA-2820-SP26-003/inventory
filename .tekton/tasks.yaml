@@ -127,7 +127,7 @@ spec:
           echo "Found Pipfile file: using pipenv ..."
           python -m pip install --upgrade pip pipenv
           pipenv install --system --dev
-        elif -e "requirements.txt" ]; then
+        elif [ -e "requirements.txt" ]; then
           python -m pip install --user -r requirements.txt
         fi
 
