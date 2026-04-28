@@ -316,6 +316,49 @@ Scenario: Update restock_level and restock_amount via inline edit
     And I should see "35" in the results
     And I should see "45" in the results
 
+Scenario: Update an Inventory Item using the Update button
+    When I visit the "Home Page"
+    And I set the "Product Id" to "PROD001"
+    And I press the "Search" button
+    Then I should see the message "Success"
+    When I copy the "Id" field
+    And I press the "Clear" button
+    And I paste the "Id" field
+    And I press the "Retrieve" button
+    Then I should see the message "Success"
+    And I should see "PROD001" in the "Product Id" field
+    When I set the "Quantity" to "999"
+    And I press the "Update" button
+    Then I should see the message "Success"
+    And I should see "999" in the "Quantity" field
+
+Scenario: Update an Inventory Item condition using the Update button
+    When I visit the "Home Page"
+    And I set the "Product Id" to "PROD001"
+    And I press the "Search" button
+    Then I should see the message "Success"
+    When I copy the "Id" field
+    And I press the "Clear" button
+    And I paste the "Id" field
+    And I press the "Retrieve" button
+    Then I should see the message "Success"
+    And I should see "New" in the "Condition" dropdown
+    When I select "Used" in the "Condition" dropdown
+    And I press the "Update" button
+    Then I should see the message "Success"
+    And I should see "Used" in the "Condition" dropdown
+
+Scenario: Update a non-existent Inventory Item using the Update button
+    When I visit the "Home Page"
+    And I set the "Id" to "00000000-0000-0000-0000-000000000000"
+    And I set the "Product Id" to "PROD999"
+    And I select "New" in the "Condition" dropdown
+    And I set the "Quantity" to "10"
+    And I set the "Restock Level" to "5"
+    And I set the "Restock Amount" to "10"
+    And I press the "Update" button
+    Then I should see the message "was not found"
+
 Scenario: Restock an Inventory Item
     When I visit the "Home Page"
     And I set the "Product Id" to "PROD003"
