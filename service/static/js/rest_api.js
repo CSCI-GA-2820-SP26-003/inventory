@@ -244,7 +244,7 @@ $(function () {
             table += '<th class="col-md-1">Quantity</th>'
             table += '<th class="col-md-2">Restock Level</th>'
             table += '<th class="col-md-2">Restock Amount</th>'
-            table += '<th class="col-md-1">Update</th>'
+            table += '<th class="col-md-1">Edit</th>'
             table += '<th class="col-md-1">Decrement</th>'
             table += '</tr></thead><tbody>'
 
@@ -411,6 +411,46 @@ $(function () {
       });
   });
 
+    // ****************************************
+    // Update an Inventory Item
+    // ****************************************
+
+    $("#update-btn").click(function () {
+
+        let item_id = $("#item_id").val();
+        let product_id = $("#item_product_id").val();
+        let condition = $("#item_condition").val() || "NEW";
+        let quantity = parseInt($("#item_quantity").val());
+        let restock_level = parseInt($("#item_restock_level").val());
+        let restock_amount = parseInt($("#item_restock_amount").val());
+
+        let data = {
+            "product_id": product_id,
+            "condition": condition,
+            "quantity": quantity,
+            "restock_level": restock_level,
+            "restock_amount": restock_amount
+        };
+
+        $("#flash_message").empty();
+
+        let ajax = $.ajax({
+            type: "PUT",
+            url: `/api/inventory/${item_id}`,
+            contentType: "application/json",
+            data: JSON.stringify(data),
+        });
+
+        ajax.done(function(res){
+            update_form_data(res)
+            flash_message("Success")
+        });
+
+        ajax.fail(function(res){
+            flash_message(res.responseJSON.message)
+        });
+    });
+
   // ****************************************
   // Restock an Inventory Item
   // ****************************************
@@ -460,7 +500,7 @@ $(function () {
 
             let table = '<table class="table table-striped">';
             table += '<thead><tr>';
-            table += '<th>ID</th><th>Product ID</th><th>Condition</th><th>Quantity</th><th>Restock Level</th><th>Restock Amount</th><th>Update</th><th>Decrement</th>';
+            table += '<th>ID</th><th>Product ID</th><th>Condition</th><th>Quantity</th><th>Restock Level</th><th>Restock Amount</th><th>Edit</th><th>Decrement</th>';
             table += '</tr></thead><tbody>';
 
             for (let i = 0; i < res.length; i++) {
